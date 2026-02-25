@@ -571,9 +571,9 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
               style={{
                 fontFamily: 'var(--font-display)',
                 fontStyle: 'italic',
-                fontSize: '15px',
+                fontSize: '16px',
                 fontWeight: 400,
-                color: 'rgba(232, 228, 214, 0.7)',
+                color: 'rgba(232, 228, 214, 0.8)',
                 letterSpacing: '0.01em',
                 marginTop: '0.8rem',
                 opacity: 0,
