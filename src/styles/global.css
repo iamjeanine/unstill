@@ -1,0 +1,923 @@
+:root {
+  --color-bg: #fafaf8;
+  --color-accent: #E8705A;
+  --color-dark: #0a0a0a;
+  --color-void: #050505;
+  --color-text: #1a1a1a;
+  --color-text-light: rgba(255, 255, 255, 0.5);
+  --color-text-muted: #888;
+  --font-display: 'Instrument Serif', serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: white;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* Canvas layer */
+.webgl-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Scrollable content layer */
+.scroll-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Scene sections */
+.scene {
+  position: relative;
+  width: 100%;
+}
+
+.scene--entry {
+  height: 150vh;
+  background: var(--color-dark);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+}
+
+.scene--archive {
+  min-height: 400vh;
+  height: 400vh;
+  background: var(--color-bg);
+  position: relative;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HORIZON — The Light Table
+   Glass plate negatives on a curator's light table.
+
+   CSS multi-column masonry. Images flow down 3 columns and
+   pack tightly. No row alignment — each photograph gets the
+   exact height it needs. Landscapes and portraits sit together
+   naturally, like glass plates spread across a surface.
+
+   Elevated glass cards. Coral glow on hover.
+   ═══════════════════════════════════════════════════════════ */
+
+.scene--horizon {
+  position: relative;
+  background: var(--color-void);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 5vw 6vh;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HARTMAN QUOTE — The Threshold.
+   Full-viewport standalone. Museum wall quote.
+   Reframes everything that follows.
+   ═══════════════════════════════════════════════════════════ */
+
+.scene--hartman {
+  position: relative;
+  background: var(--color-void);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Threshold — cream fades into the void */
+.hartman-gradient {
+  width: 100%;
+  height: 40vh;
+  background: linear-gradient(to bottom, var(--color-bg), var(--color-void));
+  flex-shrink: 0;
+}
+
+/* Centering container — the quote owns the full screen */
+.hartman-quote {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20vh 5vw 15vh;
+}
+
+.hartman-quote__block {
+  text-align: center;
+  max-width: 900px;
+  margin: 0;
+  padding: 0;
+}
+
+.hartman-quote__text {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(2rem, 4.5vw, 3.8rem);
+  color: rgba(232, 228, 214, 0.85);
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.hartman-quote__cite {
+  display: block;
+  margin-top: 40px;
+  font-family: var(--font-body);
+  font-style: normal;
+  font-size: clamp(0.9rem, 1.2vw, 1.1rem);
+  font-weight: 300;
+  color: rgba(232, 228, 214, 0.6);
+  letter-spacing: 0.06em;
+}
+
+/* ── Masonry layout ──
+   Multi-column does the heavy lifting. Items flow top-to-bottom
+   across 3 columns. break-inside:avoid keeps cards intact.
+   The column gap is the dark table between the plates. */
+.horizon-masonry {
+  column-count: 3;
+  column-gap: 20px;
+  max-width: 960px;
+  width: 100%;
+  margin-top: 8vh;
+  position: relative;
+  z-index: 0;
+}
+
+/* ── Card — glass plate on the table ──
+   break-inside:avoid prevents a card from splitting across columns.
+   Margin-bottom creates vertical spacing between cards in a column. */
+.horizon-card {
+  break-inside: avoid;
+  margin-bottom: 20px;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
+}
+
+.horizon-card:hover {
+  transform: translateY(-3px);
+}
+
+/* ── Image frame — elevated glass surface ──
+   Frosted glass background, hairline border, inset top-edge
+   highlight (light catching glass), multi-layered shadow,
+   backdrop blur. The card IS the glass plate. */
+.horizon-frame {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  transition:
+    border-color 0.5s cubic-bezier(0.22, 0.1, 0.28, 1),
+    box-shadow 0.5s cubic-bezier(0.22, 0.1, 0.28, 1);
+}
+
+/* Hover: coral glow beneath the plate */
+.horizon-card:hover .horizon-frame {
+  border-color: rgba(232, 112, 90, 0.25);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 12px 40px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(232, 112, 90, 0.12),
+    0 0 60px rgba(232, 112, 90, 0.06);
+}
+
+/* Image — natural proportions, zero crop */
+.horizon-frame img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition:
+    transform 0.6s cubic-bezier(0.22, 0.1, 0.28, 1),
+    filter 0.6s cubic-bezier(0.22, 0.1, 0.28, 1);
+}
+
+/* Cropped images — push-in to hide watermark stars near corners.
+   Scale(1.08) inside overflow:hidden clips ~4% off each edge.
+   transform-origin (set via inline style) biases toward the face
+   so the watermarked corner gets more crop. */
+.horizon-frame img.horizon-img--cropped {
+  transform: scale(1.12);
+}
+
+.horizon-card:hover .horizon-frame img {
+  transform: scale(1.02);
+  filter: brightness(1.08);
+}
+
+.horizon-card:hover .horizon-frame img.horizon-img--cropped {
+  transform: scale(1.14);
+  filter: brightness(1.08);
+}
+
+/* ── Vignette — darkened edges, face emerges ── */
+.horizon-vignette {
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  transition: box-shadow 0.6s cubic-bezier(0.22, 0.1, 0.28, 1);
+  z-index: 1;
+}
+
+.horizon-card:hover .horizon-vignette {
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Catalog label — museum typography ── */
+.horizon-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 4px 0;
+  gap: 8px;
+}
+
+.horizon-label__name {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.4s ease;
+}
+
+.horizon-card:hover .horizon-label__name {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.horizon-label__meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.4s ease;
+}
+
+.horizon-card:hover .horizon-label__meta {
+  color: rgba(232, 112, 90, 0.5);
+}
+
+/* ── Photographic grain — shared subtle texture for dark sections ── */
+.film-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  mix-blend-mode: overlay;
+}
+
+/* ── Horizon-specific grain (slightly stronger for the light table) ── */
+.horizon-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  mix-blend-mode: overlay;
+}
+
+/* ── Horizon discovery hint ── */
+.horizon-hint {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(232, 228, 214, 0.5);
+  text-align: center;
+  margin-top: 2rem;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+/* ── Horizon Inscription Panel ── */
+
+.horizon-card {
+  cursor: pointer;
+}
+
+.horizon-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(5, 5, 5, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.horizon-panel {
+  cursor: default;
+  max-width: 420px;
+  width: 90vw;
+  text-align: center;
+  position: relative;
+}
+
+.horizon-panel__close {
+  position: absolute;
+  top: -44px;
+  right: 0;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 28px;
+  font-weight: 300;
+  cursor: pointer;
+  padding: 8px;
+  line-height: 1;
+  transition: color 0.3s ease;
+}
+
+.horizon-panel__close:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.horizon-panel__photo {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+.horizon-panel__name {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 20px;
+  font-weight: 400;
+  color: rgba(232, 228, 214, 0.85);
+  margin: 1rem 0 0;
+  line-height: 1.3;
+}
+
+.horizon-panel__meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.08em;
+  margin-top: 0.3rem;
+}
+
+.horizon-panel__inscription-zone {
+  margin-top: 1.5rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  min-height: 60px;
+  position: relative;
+}
+
+.horizon-panel__inscription {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  animation: chemical-develop-dark 1.8s cubic-bezier(0.22, 0.1, 0.28, 1) forwards;
+}
+
+.horizon-panel__loading {
+  position: absolute;
+  top: 1.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 16px;
+  width: 55%;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  animation: inscription-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes inscription-pulse {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.45; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCALE — Numbers and subheader.
+   After the Hartman reframing, the numbers land with weight.
+   ═══════════════════════════════════════════════════════════ */
+
+.scene--scale {
+  position: relative;
+  background: var(--color-void);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 5vw;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CLOSING — "The archive kept records. You just kept company."
+   ═══════════════════════════════════════════════════════════ */
+
+.scene--closing {
+  background: var(--color-void);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 5vw 260px;
+}
+
+.closing-statement {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+  color: rgba(232, 228, 214, 0.78);
+  text-align: center;
+  line-height: 1.5;
+  margin-top: 140px;
+  max-width: 600px;
+  padding: 0 20px;
+}
+
+/* Scale numbers — vertical stacking, each number a revelation */
+.scale-numbers {
+  padding-top: 80px;
+  padding-bottom: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+  align-items: center;
+  text-align: center;
+}
+
+.scale-line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.scale-num {
+  font-family: var(--font-display);
+  font-size: clamp(60px, 7vw, 80px);
+  color: rgba(232, 228, 214, 0.9);
+  line-height: 1;
+}
+
+.scale-text {
+  font-family: var(--font-body);
+  font-size: clamp(14px, 1.3vw, 18px);
+  font-weight: 400;
+  color: rgba(232, 228, 214, 0.7);
+  line-height: 1.4;
+}
+
+/* Invitation block — whispered, not announced */
+.invitation-block {
+  margin-top: 80px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.invitation-answer {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+  color: rgba(232, 228, 214, 0.7);
+  line-height: 1.5;
+}
+
+.invitation-divider {
+  width: 24px;
+  height: 1px;
+  background: rgba(232, 228, 214, 0.2);
+  margin: 80px auto 0;
+}
+
+.invitation-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: rgba(232, 228, 214, 0.85);
+  margin-top: 100px;
+}
+
+.invitation-email {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--color-accent);
+  margin-top: 16px;
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+}
+
+.invitation-email:hover {
+  opacity: 0.75;
+}
+
+.invitation-role {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(232, 228, 214, 0.45);
+  letter-spacing: 0.04em;
+  margin-top: 6px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE — Horizon + Scale + Invitation
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 1100px) {
+  .horizon-masonry {
+    max-width: 740px;
+    column-gap: 18px;
+  }
+  .horizon-card {
+    margin-bottom: 18px;
+  }
+  .scale-num {
+    font-size: clamp(48px, 6vw, 56px);
+  }
+}
+
+@media (max-width: 768px) {
+  .horizon-masonry {
+    column-count: 2;
+    max-width: 500px;
+    column-gap: 14px;
+  }
+  .horizon-card {
+    margin-bottom: 14px;
+  }
+  .hartman-gradient {
+    height: 25vh;
+  }
+  .hartman-quote {
+    min-height: 75vh;
+    padding: 12vh 5vw 12vh;
+  }
+  .hartman-quote__text {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+  }
+  .horizon-label__name {
+    font-size: 10px;
+  }
+  .horizon-label__meta {
+    font-size: 8px;
+  }
+  .horizon-frame {
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
+      0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  .scale-numbers {
+    padding-top: 60px;
+    padding-bottom: 60px;
+    gap: 48px;
+  }
+  .scale-num {
+    font-size: 48px;
+  }
+  .invitation-block {
+    margin-top: 100px;
+  }
+  .invitation-answer {
+    font-size: clamp(1rem, 2vw, 1.4rem);
+  }
+  .scene--closing {
+    padding-bottom: 180px;
+  }
+  .horizon-panel {
+    max-width: 340px;
+  }
+}
+
+@media (max-width: 480px) {
+  .horizon-masonry {
+    column-count: 1;
+    max-width: 340px;
+  }
+  .horizon-card:hover {
+    transform: none;
+  }
+  .horizon-panel {
+    max-width: 280px;
+    width: 92vw;
+  }
+  .horizon-panel__name {
+    font-size: 17px;
+  }
+  .horizon-panel__inscription {
+    font-size: 13px;
+  }
+  .hartman-quote__text {
+    font-size: clamp(1.4rem, 5vw, 2rem);
+  }
+  .hartman-quote {
+    min-height: 65vh;
+    padding: 10vh 5vw 10vh;
+  }
+  .horizon-label__name {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  .horizon-label__meta {
+    color: rgba(255, 255, 255, 0.25);
+  }
+  .scale-num {
+    font-size: 40px;
+  }
+  .scale-numbers {
+    gap: 40px;
+  }
+  .invitation-name {
+    margin-top: 80px;
+  }
+}
+
+/* === "The Photograph Resists" — inscriptions in margin beside video === */
+
+/* Container — vertically centered in the right margin alongside the video */
+.inscriptions-container {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateX(calc(100% + 24px)) translateY(-50%);
+  width: 230px;
+  pointer-events: none;
+}
+
+/* "The Photograph Resists" — editorial label above inscriptions */
+.inscription-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.25);
+  margin-bottom: 1rem;
+  opacity: 0;
+  animation: chemical-develop 2.4s cubic-bezier(0.22, 0.1, 0.28, 1) 0.4s forwards;
+}
+
+.inscription-label--dark {
+  animation-name: chemical-develop-dark;
+}
+
+/* Text block — simple column, vertically centered by container */
+.inscription-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Each line — warm faded ink on cream paper */
+.inscription-line {
+  display: block;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  line-height: 1.7;
+  margin-bottom: 14px;
+  opacity: 0;
+  animation: chemical-develop 1.8s cubic-bezier(0.22, 0.1, 0.28, 1) forwards;
+}
+
+/* First line — slight hierarchy bump */
+.inscription-line.first-line {
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  margin-bottom: 16px;
+  animation-duration: 2s;
+}
+
+/* Chemical development — blur to sharp */
+@keyframes chemical-develop {
+  0%   { opacity: 0;    filter: blur(6px) brightness(0.3); }
+  12%  { opacity: 0.1;  filter: blur(4px) brightness(0.5); }
+  28%  { opacity: 0.3;  filter: blur(2.5px) brightness(0.65); }
+  45%  { opacity: 0.55; filter: blur(1.2px) brightness(0.8); }
+  65%  { opacity: 0.75; filter: blur(0.4px) brightness(0.92); }
+  82%  { opacity: 0.88; filter: blur(0.1px) brightness(0.98); }
+  100% { opacity: 1;    filter: blur(0px) brightness(1); }
+}
+
+/* Narrow viewports: move inscriptions below the video, centered */
+@media (max-width: 1100px) {
+  .inscriptions-container {
+    position: relative;
+    right: auto;
+    top: auto;
+    transform: none;
+    width: 100%;
+    max-width: 500px;
+    margin: 1rem auto 0;
+    text-align: center;
+  }
+  .inscription-lines {
+    align-items: center;
+  }
+}
+
+/* Very small screens: reposition as centered pull-quote below video */
+@media (max-width: 480px) {
+  .inscriptions-container {
+    position: relative;
+    right: auto;
+    top: auto;
+    transform: none;
+    width: 100%;
+    max-width: 320px;
+    margin: 1.2rem auto 0;
+    text-align: center;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .inscriptions-container .inscription-lines {
+    align-items: center;
+  }
+  .inscriptions-container .inscription-line {
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+  .inscriptions-container .inscription-line.first-line {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STORY ESSAY — The Lightbox with Focus Gradient
+   Museum conservation table aesthetic. Dark warm grey.
+   Focus gradient masks text above/below the reading zone.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Essay zone — scrollable area with focus gradient mask */
+.story-essay-zone {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(0, 0, 0, 1) 12%,
+    rgba(0, 0, 0, 1) 68%,
+    rgba(0, 0, 0, 0.2) 88%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(0, 0, 0, 1) 12%,
+    rgba(0, 0, 0, 1) 68%,
+    rgba(0, 0, 0, 0.2) 88%,
+    transparent 100%
+  );
+  /* Hide scrollbar for clean aesthetic */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.story-essay-zone::-webkit-scrollbar {
+  display: none;
+}
+
+
+/* ── Dark-mode inscription overrides ──
+   When inscriptions appear inside the dark story panel,
+   the chemical-develop animation uses lighter brightness values. */
+.inscription-line--dark {
+  /* Colors are set via inline style; the animation handles opacity.
+     Adjust brightness for dark backgrounds. */
+}
+
+@keyframes chemical-develop-dark {
+  0%   { opacity: 0;    filter: blur(6px) brightness(1.5); }
+  12%  { opacity: 0.1;  filter: blur(4px) brightness(1.3); }
+  28%  { opacity: 0.3;  filter: blur(2.5px) brightness(1.2); }
+  45%  { opacity: 0.55; filter: blur(1.2px) brightness(1.1); }
+  65%  { opacity: 0.75; filter: blur(0.4px) brightness(1.05); }
+  82%  { opacity: 0.88; filter: blur(0.1px) brightness(1.02); }
+  100% { opacity: 1;    filter: blur(0px) brightness(1); }
+}
+
+.inscription-line--dark {
+  animation-name: chemical-develop-dark;
+}
+
+/* ── Story essay responsive ── */
+@media (max-width: 768px) {
+  .story-essay-zone {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.6) 0%,
+      rgba(0, 0, 0, 1) 10%,
+      rgba(0, 0, 0, 1) 75%,
+      rgba(0, 0, 0, 0.2) 92%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.6) 0%,
+      rgba(0, 0, 0, 1) 10%,
+      rgba(0, 0, 0, 1) 75%,
+      rgba(0, 0, 0, 0.2) 92%,
+      transparent 100%
+    );
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REDUCED MOTION — Accessibility & museum-grade care.
+   Collapses all CSS animations and transitions for users
+   who prefer reduced motion. GSAP animations are handled
+   separately in JS via matchMedia.
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
