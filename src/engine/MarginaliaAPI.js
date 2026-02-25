@@ -18,6 +18,30 @@ import resistsPrompt from '../../resists-prompt-v5.md?raw'
 
 const SYSTEM_PROMPT = resistsPrompt
 
+// ─── Request queue — serializes all API calls to avoid 429s ─────────
+// Every call goes through this queue regardless of origin (batch
+// prefetch, hover prefetch, click fetch). 1.5s gap between calls
+// keeps us well under the 30k input tokens/min rolling window.
+
+const QUEUE_DELAY_MS = 1500
+let _queue = Promise.resolve()
+
+function enqueue(fn) {
+  _queue = _queue
+    .then(() => fn())
+    .then((result) => {
+      return new Promise((resolve) =>
+        setTimeout(() => resolve(result), QUEUE_DELAY_MS)
+      )
+    })
+    .catch((err) => {
+      return new Promise((resolve) =>
+        setTimeout(() => resolve(null), QUEUE_DELAY_MS)
+      )
+    })
+  return _queue
+}
+
 // ─── API call ───────────────────────────────────────────────────────
 
 /**
@@ -34,7 +58,11 @@ const SYSTEM_PROMPT = resistsPrompt
  * @param {string[]} params.previousNotes — Lines from previous API calls this session
  * @returns {Promise<string|null>} The inscription lines (newline-separated), or null on failure
  */
-export async function generateMarginalia({
+export function generateMarginalia(params) {
+  return enqueue(() => _callAPI(params))
+}
+
+async function _callAPI({
   personId,
   personName,
   age,

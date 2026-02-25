@@ -260,21 +260,8 @@ button {
     filter 0.6s cubic-bezier(0.22, 0.1, 0.28, 1);
 }
 
-/* Cropped images — push-in to hide watermark stars near corners.
-   Scale(1.08) inside overflow:hidden clips ~4% off each edge.
-   transform-origin (set via inline style) biases toward the face
-   so the watermarked corner gets more crop. */
-.horizon-frame img.horizon-img--cropped {
-  transform: scale(1.12);
-}
-
 .horizon-card:hover .horizon-frame img {
   transform: scale(1.02);
-  filter: brightness(1.08);
-}
-
-.horizon-card:hover .horizon-frame img.horizon-img--cropped {
-  transform: scale(1.14);
   filter: brightness(1.08);
 }
 
@@ -441,10 +428,7 @@ button {
 }
 
 .horizon-panel__inscription-zone {
-  margin-top: 1.5rem;
-  padding-top: 1.2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  min-height: 60px;
+  margin-top: 1rem;
   position: relative;
 }
 
@@ -457,6 +441,16 @@ button {
   letter-spacing: 0.02em;
   opacity: 0;
   animation: chemical-develop-dark 1.8s cubic-bezier(0.22, 0.1, 0.28, 1) forwards;
+}
+
+.horizon-panel__inscription-fallback {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.02em;
+  padding-top: 0.4rem;
 }
 
 .horizon-panel__loading {
@@ -492,7 +486,8 @@ button {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CLOSING — "The archive kept records. You just kept company."
+   CLOSING — The Final Frame.
+   Words arrive, the room goes quiet, you sit with it.
    ═══════════════════════════════════════════════════════════ */
 
 .scene--closing {
@@ -503,16 +498,49 @@ button {
   padding: 0 5vw 260px;
 }
 
+/* The breath — empty dark space after Horizon's faces */
+.closing-void {
+  width: 100%;
+  height: 45vh;
+  flex-shrink: 0;
+}
+
+/* Wrapper for all visible closing text */
+.closing-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* The closing line — the hero. Bigger, warmer, luminous. */
 .closing-statement {
   font-family: var(--font-display);
   font-style: italic;
-  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
-  color: rgba(232, 228, 214, 0.78);
+  font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+  color: rgba(232, 228, 214, 0.88);
   text-align: center;
-  line-height: 1.5;
-  margin-top: 140px;
-  max-width: 600px;
+  line-height: 1.45;
+  max-width: 680px;
   padding: 0 20px;
+  letter-spacing: -0.01em;
+}
+
+/* Chemical develop — slow and deliberate for the closing */
+.closing-develop {
+  animation: chemical-develop-dark 2.6s cubic-bezier(0.22, 0.1, 0.28, 1) forwards;
+}
+
+/* Dedication — the emotional last note. Legible, warm, present. */
+.invitation-dedication {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(15px, 1.4vw, 17px);
+  font-weight: 400;
+  color: rgba(232, 228, 214, 0.72);
+  margin-top: 12px;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
 }
 
 /* Scale numbers — vertical stacking, each number a revelation */
@@ -548,9 +576,9 @@ button {
   line-height: 1.4;
 }
 
-/* Invitation block — whispered, not announced */
+/* Invitation block — earned, not announced */
 .invitation-block {
-  margin-top: 80px;
+  margin-top: 120px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -566,17 +594,17 @@ button {
 }
 
 .invitation-divider {
-  width: 24px;
+  width: 28px;
   height: 1px;
   background: rgba(232, 228, 214, 0.2);
-  margin: 80px auto 0;
+  margin: 0 auto;
 }
 
 .invitation-name {
   font-family: var(--font-display);
-  font-size: 22px;
-  color: rgba(232, 228, 214, 0.85);
-  margin-top: 100px;
+  font-size: clamp(20px, 2vw, 24px);
+  color: rgba(232, 228, 214, 0.88);
+  margin-top: 48px;
 }
 
 .invitation-email {
@@ -593,14 +621,6 @@ button {
   opacity: 0.75;
 }
 
-.invitation-role {
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 300;
-  color: rgba(232, 228, 214, 0.45);
-  letter-spacing: 0.04em;
-  margin-top: 6px;
-}
 
 
 /* ═══════════════════════════════════════════════════════════
@@ -664,6 +684,9 @@ button {
   .invitation-answer {
     font-size: clamp(1rem, 2vw, 1.4rem);
   }
+  .closing-void {
+    height: 35vh;
+  }
   .scene--closing {
     padding-bottom: 180px;
   }
@@ -708,6 +731,9 @@ button {
   }
   .scale-numbers {
     gap: 40px;
+  }
+  .closing-void {
+    height: 28vh;
   }
   .invitation-name {
     margin-top: 80px;

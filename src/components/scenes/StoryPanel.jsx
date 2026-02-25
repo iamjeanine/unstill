@@ -383,7 +383,6 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
   // ─── Inscription JSX ──────────────────────────────────────────
   const inscriptionsJSX = inscriptionLines && inscriptionLines.length > 0 ? (
     <div className="inscriptions-container inscriptions-container--dark">
-      <p className="inscription-label inscription-label--dark">The Photograph Resists</p>
       <div className="inscription-lines">
         {inscriptionLines.map((line, i) => (
           <span

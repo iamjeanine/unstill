@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { generateMarginalia } from '../../engine/MarginaliaAPI'
 import { getPreviousNotes, addNotes, setPrefetch, hasPrefetch, consumePrefetch, clearPrefetch } from '../../engine/marginaliaSessionStore'
+import HorizonLoupe from '../ui/HorizonLoupe'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -27,27 +28,23 @@ gsap.registerPlugin(ScrollTrigger)
 
 const horizonFaces = [
   // Curated order for column flow — alternating formats creates rhythm
-  // crop: transform-origin for push-in on images with watermark stars.
-  // The star sits near bottom-right (or bottom-left for Falleni).
-  // Scale(1.08) inside overflow:hidden clips corners; transform-origin
-  // biases toward the face so the star edge gets cropped away.
-  { file: 'Sidney Kelly.png',  name: 'Sidney Kelly',     catalog: '1266',     date: '26.6.24',  crop: '40% 35%', location: 'Sydney' },
+  { file: 'Sidney Kelly.png',  name: 'Sidney Kelly',     catalog: '1266',     date: '26.6.24',  location: 'Sydney' },
   { file: 'D Ligores.png',    name: 'D. Ligores',       catalog: 'S.P.',     date: 'c. 1925',  location: 'Sydney' },
-  { file: 'Edna Edgar.png',   name: 'Edna Edgar',       catalog: '158A',     date: '28.12.26', crop: '40% 25%', location: 'Sydney' },
+  { file: 'Edna Edgar.png',   name: 'Edna Edgar',       catalog: '158A',     date: '28.12.26', location: 'Sydney' },
   { file: 'V Lowe.png',       name: 'V. Lowe',          catalog: '764',      date: '15.2.22',  location: 'Sydney' },
-  { file: 'D. Poole.png',     name: 'D. Poole',         catalog: '639 L.B.', date: '31.7.24',  crop: '40% 30%', location: 'Sydney' },
-  { file: 'F. Schmidt.png',   name: 'F. Schmidt',       catalog: '410',      date: '18.6.23',  crop: '50% 30%', location: 'Sydney' },
-  { file: 'AH Chong.png',     name: 'Ah Chong',         catalog: 'D62',      date: '11.7.28',  crop: '40% 35%', location: 'Sydney' },
-  { file: 'S.J. Hay.png',     name: 'S. J. Hay',        catalog: '167',      date: 'c. 1922',  crop: '50% 20%', location: 'Sydney' },
+  { file: 'D. Poole.png',     name: 'D. Poole',         catalog: '639 L.B.', date: '31.7.24',  location: 'Sydney' },
+  { file: 'F. Schmidt.png',   name: 'F. Schmidt',       catalog: '410',      date: '18.6.23',  location: 'Sydney' },
+  { file: 'AH Chong.png',     name: 'Ah Chong',         catalog: 'D62',      date: '11.7.28',  location: 'Sydney' },
+  { file: 'S.J. Hay.png',     name: 'S. J. Hay',        catalog: '167',      date: 'c. 1922',  location: 'Sydney' },
   { file: 'May Russel.png',   name: 'May Russel',       catalog: '936',      date: '31.1.22',  location: 'Sydney' },
-  { file: 'E. Falleni.png',   name: 'E. Falleni',       catalog: '756',      date: 'c. 1920',  crop: '55% 20%', location: 'Sydney' },
-  { file: 'G Lowe.png',       name: 'G. Lowe',          catalog: 'D10',      date: '28.9.28',  crop: '40% 35%', location: 'Sydney' },
-  { file: 'Neville McQuade and Lewis Stanley.jpg', name: 'N. McQuade & L. Stanley', catalog: 'S.P.', date: 'c. 1930', crop: '50% 30%', location: 'Sydney' },
+  { file: 'E. Falleni.png',   name: 'E. Falleni',       catalog: '756',      date: 'c. 1920',  location: 'Sydney' },
+  { file: 'G Lowe.png',       name: 'G. Lowe',          catalog: 'D10',      date: '28.9.28',  location: 'Sydney' },
+  { file: 'Neville McQuade and Lewis Stanley.jpg', name: 'N. McQuade & L. Stanley', catalog: 'S.P.', date: 'c. 1930', location: 'Sydney' },
   { file: 'Patrick Riley.png', name: 'Patrick Riley',    catalog: '1098',     date: '17.8.26',  location: 'Sydney' },
-  { file: 'V Stander.png',    name: 'V. Stander',       catalog: 'S.P.',     date: 'c. 1925',  crop: '40% 35%', location: 'Sydney' },
-  { file: 'P. Hume.jpg',      name: 'P. Hume',          catalog: 'S15 L.B.', date: '1.6.21',   crop: '45% 20%', location: 'Sydney' },
-  { file: 'E. Park.jpg',      name: 'E. Park',          catalog: 'K. Don',   date: '20.29',    crop: '40% 30%', location: 'Sydney' },
-  { file: 'William Stanley Moore.png', name: 'William Stanley Moore', catalog: '1299', date: '1.8.25', crop: '40% 35%', location: 'Sydney' },
+  { file: 'V Stander.png',    name: 'V. Stander',       catalog: 'S.P.',     date: 'c. 1925',  location: 'Sydney' },
+  { file: 'P. Hume.jpg',      name: 'P. Hume',          catalog: 'S15 L.B.', date: '1.6.21',   location: 'Sydney' },
+  { file: 'E. Park.jpg',      name: 'E. Park',          catalog: 'K. Don',   date: '20.29',    location: 'Sydney' },
+  { file: 'William Stanley Moore.png', name: 'William Stanley Moore', catalog: '1299', date: '1.8.25', location: 'Sydney' },
 ]
 
 // Session-seeded shuffle — different each page load, stable within session
@@ -76,8 +73,7 @@ export default function Horizon() {
   const activeFetchRef = useRef(null) // guards against stale API responses
 
   // ─── One-time hover hint ───────────────────────────────────
-  const hintRef = useRef(null)
-  const hintShownRef = useRef(false)
+
 
   // ─── Staggered entrance animation ────────────────────────────
   useEffect(() => {
@@ -145,10 +141,10 @@ export default function Horizon() {
         if (batchPrefetchedRef.current) return
         batchPrefetchedRef.current = true
 
-        // Process one at a time with cooldown to stay under rate limits.
-        // 30k input tokens/min ≈ ~14 calls before the rolling window bites.
-        // 6s gap keeps us safely under the ceiling (~10 calls/min).
-        const BATCH_COOLDOWN = 6000
+        // Process one at a time — the API queue in MarginaliaAPI.js
+        // handles rate-limit pacing (1.5s between calls). Small extra
+        // cooldown here gives the queue breathing room.
+        const BATCH_COOLDOWN = 500
         const processQueue = async () => {
           for (let idx = 0; idx < shuffledFaces.length; idx++) {
             const face = shuffledFaces[idx]
@@ -200,24 +196,9 @@ export default function Horizon() {
     return face.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')
   }, [])
 
-  // ─── Show hint on first hover ───────────────────────────────
-  const showHintOnce = useCallback(() => {
-    if (hintShownRef.current) return
-    hintShownRef.current = true
-    const hint = hintRef.current
-    if (!hint) return
-    gsap.to(hint, { opacity: 1, duration: 0.8, ease: 'power2.out' })
-    gsap.to(hint, {
-      opacity: 0,
-      duration: 0.8,
-      delay: 4,
-      ease: 'power2.in',
-    })
-  }, [])
 
   // ─── Prefetch inscription on hover (fires API before click) ─
   const handleCardHover = useCallback((face) => {
-    showHintOnce()
     const personId = getPersonId(face)
     if (hasPrefetch(personId)) return // already in flight
 
@@ -246,7 +227,7 @@ export default function Horizon() {
     })()
 
     setPrefetch(personId, promise)
-  }, [getPersonId, showHintOnce])
+  }, [getPersonId])
 
   // ─── Fetch inscription — consumes prefetch if available ─────
   const fetchInscription = useCallback(async (face) => {
@@ -300,11 +281,41 @@ export default function Horizon() {
   }, [getPersonId])
 
   // ─── Click handler ───────────────────────────────────────────
-  const handleCardClick = useCallback((face) => {
+  // Try to resolve the prefetch synchronously so inscription appears
+  // with the panel — no layout shift, no waiting. If prefetch isn't
+  // ready, open the panel and fetch in the background.
+  const handleCardClick = useCallback(async (face) => {
+    const personId = getPersonId(face)
+    const prefetchPromise = consumePrefetch(personId)
+
+    // If we have a prefetch, try to get it immediately
+    let immediateInscription = null
+    if (prefetchPromise) {
+      try {
+        // Give it 50ms — if it's already resolved this returns instantly
+        const result = await Promise.race([
+          prefetchPromise,
+          new Promise((_, reject) => setTimeout(() => reject('timeout'), 50)),
+        ])
+        if (result) {
+          const lines = Array.isArray(result) ? result : [result]
+          immediateInscription = lines
+          clearPrefetch(personId)
+          addNotes(personId, lines)
+        }
+      } catch (_) {
+        // Not ready yet — open without inscription, fetch below
+      }
+    }
+
     setSelectedFace(face)
-    setInscription(null)
-    fetchInscription(face)
-  }, [fetchInscription])
+    setInscription(immediateInscription)
+
+    // If no immediate inscription, fetch in the background
+    if (!immediateInscription) {
+      fetchInscription(face)
+    }
+  }, [getPersonId, fetchInscription])
 
   // ─── Close handler (GSAP fade-out, then clear state) ────────
   const handleClose = useCallback(() => {
@@ -357,17 +368,17 @@ export default function Horizon() {
             onClick={() => handleCardClick(face)}
             onMouseEnter={() => handleCardHover(face)}
           >
-            {/* Glass frame */}
-            <div className="horizon-frame">
-              <img
-                src={`/horizon/${encodeURIComponent(face.file)}`}
-                alt={face.name}
-                loading="lazy"
-                className={face.crop ? 'horizon-img--cropped' : undefined}
-                style={face.crop ? { transformOrigin: face.crop } : undefined}
-              />
-              <div className="horizon-vignette" />
-            </div>
+            {/* Glass frame with magnifying loupe */}
+            <HorizonLoupe src={`/horizon/${encodeURIComponent(face.file)}`}>
+              <div className="horizon-frame">
+                <img
+                  src={`/horizon/${encodeURIComponent(face.file)}`}
+                  alt={face.name}
+                  loading="lazy"
+                />
+                <div className="horizon-vignette" />
+              </div>
+            </HorizonLoupe>
 
             {/* Catalog label */}
             <div className="horizon-label">
@@ -377,11 +388,6 @@ export default function Horizon() {
           </div>
         ))}
       </div>
-
-      {/* ── Discovery hint — appears once on first hover ── */}
-      <p ref={hintRef} className="horizon-hint" style={{ opacity: 0 }}>
-        Click to see what remains
-      </p>
 
       {/* ── Inscription panel overlay ── */}
       {selectedFace && (
@@ -416,18 +422,23 @@ export default function Horizon() {
               {selectedFace.catalog} &middot; {selectedFace.date}
             </p>
 
-            {/* Inscription zone */}
+            {/* Inscription zone — always present to avoid layout shift */}
             <div className="horizon-panel__inscription-zone">
-              <p className="inscription-label">The Photograph Resists</p>
-              {inscription && inscription.map((line, i) => (
-                <p
-                  className="horizon-panel__inscription"
-                  key={`${selectedFace.file}-${i}`}
-                  style={{ animationDelay: `${0.3 + i * 0.8}s` }}
-                >
-                  {line}
+              {inscription && inscription.length > 0 ? (
+                inscription.map((line, i) => (
+                  <p
+                    className="horizon-panel__inscription"
+                    key={`${selectedFace.file}-${i}`}
+                    style={{ animationDelay: `${0.3 + i * 0.8}s` }}
+                  >
+                    {line}
+                  </p>
+                ))
+              ) : (
+                <p className="horizon-panel__inscription-fallback">
+                  inscription unavailable
                 </p>
-              ))}
+              )}
             </div>
           </div>
         </div>

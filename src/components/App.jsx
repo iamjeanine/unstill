@@ -16,7 +16,20 @@ import AudioManager from '../engine/AudioManager'
 import { INTERACTION_STATES } from '../data/sceneConfig'
 import { people } from '../data/people'
 
-const audioManager = new AudioManager()
+// Preserve AudioManager across Vite HMR — a new module execution
+// would otherwise create a fresh instance while the old AudioContext
+// (with active ambient audio) gets garbage collected.
+let audioManager
+if (import.meta.hot && import.meta.hot.data.audioManager) {
+  audioManager = import.meta.hot.data.audioManager
+} else {
+  audioManager = new AudioManager()
+}
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.audioManager = audioManager
+  })
+}
 
 export default function App() {
   const [interactionState, setInteractionState] = useState(
@@ -123,8 +136,12 @@ export default function App() {
     setIsLoaded(true)
   }, [])
 
-  // Initialize audio and start ambient on first user interaction
+  // Initialize audio and start ambient on first user interaction.
+  // After HMR, the audioManager is preserved — if already initialized,
+  // skip waiting for a gesture (the original gesture already unlocked it).
   useEffect(() => {
+    if (audioManager.initialized) return
+
     const initAudio = () => {
       audioManager.init()
       audioManager.startAmbient()
@@ -177,7 +194,7 @@ export default function App() {
         <HartmanQuote />
         <Scale />
         <Horizon />
-        <Closing />
+        <Closing audioManager={audioManager} />
       </main>
 
       {/* StoryPanel stays mounted during closing phase for its exit animation.

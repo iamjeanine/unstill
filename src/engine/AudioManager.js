@@ -98,11 +98,11 @@ class AudioManager {
     this._ambientSource = source
 
     // Fade in
-    this._ambientTargetVol = 1.0
+    this._ambientTargetVol = 0.55
     const now = this.ctx.currentTime
     this.ambientGain.gain.cancelScheduledValues(now)
     this.ambientGain.gain.setTargetAtTime(
-      this.muted ? 0 : 1.0,
+      this.muted ? 0 : 0.55,
       now,
       0.3 // ~800ms to reach target
     )
@@ -121,6 +121,20 @@ class AudioManager {
       now,
       timeConstant
     )
+  }
+
+  fadeToSilence(durationMs = 5000) {
+    if (!this.initialized || !this.ctx) return
+
+    // Linear ramp guarantees reaching exactly zero — no clip at disconnect
+    const now = this.ctx.currentTime
+    this.ambientGain.gain.cancelScheduledValues(now)
+    this.ambientGain.gain.setValueAtTime(this.ambientGain.gain.value, now)
+    this.ambientGain.gain.linearRampToValueAtTime(0, now + durationMs / 1000)
+    this._ambientTargetVol = 0
+
+    // Disconnect well after silence is reached
+    setTimeout(() => { this._stopAmbientSource() }, durationMs + 2000)
   }
 
   // ─── STORY ENTER / EXIT ──────────────────────────────────
