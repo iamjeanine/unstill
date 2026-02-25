@@ -62,9 +62,8 @@ export default function LoadingScreen({ isLoaded }) {
           letterSpacing: '0.02em',
           color: 'rgba(232, 228, 214, 0.35)',
         }}
-      >
-        Sydney, 1920s.
-      </p>
+      />
+
     </div>
   )
 }
