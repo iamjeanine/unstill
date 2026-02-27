@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "premium-frontend-design": {
+      "source": "kv0906/cc-skills",
+      "sourceType": "github",
+      "computedHash": "954f360f8e3c2c9ecc97857044ace2da990f519a4b4df8e2bd89c467bcf9273f"
+    }
+  }
+}

@@ -1,8 +1,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { generateMarginalia } from '../../engine/MarginaliaAPI'
-import { getPreviousNotes, addNotes, setPrefetch, hasPrefetch, consumePrefetch, clearPrefetch } from '../../engine/marginaliaSessionStore'
+import horizonInscriptions from '../../data/horizonInscriptions.json'
 import HorizonLoupe from '../ui/HorizonLoupe'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -67,13 +66,8 @@ export default function Horizon() {
   // ─── Inscription panel state ─────────────────────────────────
   const [selectedFace, setSelectedFace] = useState(null)
   const [inscription, setInscription] = useState(null)
-  // inscriptionLoading removed — batch prefetch means inscriptions arrive near-instantly
   const overlayRef = useRef(null)
   const panelRef = useRef(null)
-  const activeFetchRef = useRef(null) // guards against stale API responses
-
-  // ─── One-time hover hint ───────────────────────────────────
-
 
   // ─── Staggered entrance animation ────────────────────────────
   useEffect(() => {
@@ -118,204 +112,20 @@ export default function Horizon() {
     }
   }, [])
 
-  // ─── Batch prefetch: sequential API calls, one at a time ────────────
-  // Fires when the Hartman quote section enters viewport (well before Horizon).
-  // Strictly sequential to avoid API rate limits — each call completes
-  // before the next starts. The API now retries on 429, so calls that
-  // would have silently failed now succeed after a brief backoff.
-  // By the time someone scrolls through HartmanQuote + Scale, several are ready.
-  const batchPrefetchedRef = useRef(false)
-  useEffect(() => {
-    if (batchPrefetchedRef.current) return
-
-    // Find the Hartman section to trigger prefetch earlier — gives more lead time
-    const hartmanSection = document.querySelector('.scene--hartman')
-    const triggerEl = hartmanSection || sectionRef.current
-    if (!triggerEl) return
-
-    const trigger = ScrollTrigger.create({
-      trigger: triggerEl,
-      start: 'top 80%',
-      once: true,
-      onEnter: () => {
-        if (batchPrefetchedRef.current) return
-        batchPrefetchedRef.current = true
-
-        // Process one at a time — the API queue in MarginaliaAPI.js
-        // handles rate-limit pacing (1.5s between calls). Small extra
-        // cooldown here gives the queue breathing room.
-        const BATCH_COOLDOWN = 500
-        const processQueue = async () => {
-          for (let idx = 0; idx < shuffledFaces.length; idx++) {
-            const face = shuffledFaces[idx]
-            const personId = face.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')
-            if (hasPrefetch(personId)) continue
-
-            const promise = (async () => {
-              try {
-                const previousNotes = getPreviousNotes(personId)
-                const text = await generateMarginalia({
-                  personId,
-                  personName: face.name,
-                  age: '',
-                  charge: face.charge || '',
-                  date: face.date,
-                  location: face.location || 'Sydney',
-                  essay: '',
-                  previousNotes,
-                })
-                if (!text) return null
-                const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0).slice(-3)
-                if (lines.length === 0) return null
-                const twoLines = lines.slice(0, 2)
-                addNotes(personId, twoLines)
-                return twoLines
-              } catch (_) {
-                return null
-              }
-            })()
-
-            setPrefetch(personId, promise)
-            await promise // Wait for this one to finish before starting next
-            // Cooldown between batch requests to avoid 429 rate limits
-            if (idx < shuffledFaces.length - 1) {
-              await new Promise((r) => setTimeout(r, BATCH_COOLDOWN))
-            }
-          }
-        }
-
-        processQueue()
-      },
-    })
-
-    return () => trigger.kill()
-  }, [])
-
   // ─── Helper: derive personId from face name ─────────────────
   const getPersonId = useCallback((face) => {
     return face.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')
   }, [])
 
-
-  // ─── Prefetch inscription on hover (fires API before click) ─
-  const handleCardHover = useCallback((face) => {
-    const personId = getPersonId(face)
-    if (hasPrefetch(personId)) return // already in flight
-
-    const promise = (async () => {
-      try {
-        const previousNotes = getPreviousNotes(personId)
-        const text = await generateMarginalia({
-          personId,
-          personName: face.name,
-          age: '',
-          charge: face.charge || '',
-          date: face.date,
-          location: face.location || 'Sydney',
-          essay: '',
-          previousNotes,
-        })
-        if (!text) return null
-        const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0).slice(-3)
-        if (lines.length === 0) return null
-        const twoLines = lines.slice(0, 2)
-        addNotes(personId, twoLines)
-        return twoLines
-      } catch (_) {
-        return null
-      }
-    })()
-
-    setPrefetch(personId, promise)
-  }, [getPersonId])
-
-  // ─── Fetch inscription — consumes prefetch if available ─────
-  const fetchInscription = useCallback(async (face) => {
-    const fetchId = face.file
-    activeFetchRef.current = fetchId
-    const personId = getPersonId(face)
-
-    // Try prefetch first (non-destructive read — safe across re-mounts)
-    const prefetchPromise = consumePrefetch(personId)
-    if (prefetchPromise) {
-      try {
-        const result = await prefetchPromise
-        if (activeFetchRef.current !== fetchId) return
-        if (result) {
-          setInscription(Array.isArray(result) ? result : [result])
-          clearPrefetch(personId)
-          return
-        }
-      } catch (_) {
-        // Prefetch failed — fall through to fresh call
-      }
-    }
-
-    // Fallback: fresh API call (no hover, or prefetch failed)
-    const previousNotes = getPreviousNotes(personId)
-    try {
-      const text = await generateMarginalia({
-        personId,
-        personName: face.name,
-        age: '',
-        charge: face.charge || '',
-        date: face.date,
-        location: face.location || 'Sydney',
-        essay: '',
-        previousNotes,
-      })
-
-      if (activeFetchRef.current !== fetchId) return
-
-      if (text) {
-        const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0).slice(-3)
-        const twoLines = lines.slice(0, 2)
-        if (twoLines.length > 0) {
-          addNotes(personId, twoLines)
-          setInscription(twoLines)
-        }
-      }
-    } catch (_) {
-      // Inscription is optional — fail silently
-    }
-  }, [getPersonId])
-
   // ─── Click handler ───────────────────────────────────────────
-  // Try to resolve the prefetch synchronously so inscription appears
-  // with the panel — no layout shift, no waiting. If prefetch isn't
-  // ready, open the panel and fetch in the background.
-  const handleCardClick = useCallback(async (face) => {
+  // Instant — reads from pre-generated static data. No API calls,
+  // no loading, no rate limits. 100% reliable for demos.
+  const handleCardClick = useCallback((face) => {
     const personId = getPersonId(face)
-    const prefetchPromise = consumePrefetch(personId)
-
-    // If we have a prefetch, try to get it immediately
-    let immediateInscription = null
-    if (prefetchPromise) {
-      try {
-        // Give it 50ms — if it's already resolved this returns instantly
-        const result = await Promise.race([
-          prefetchPromise,
-          new Promise((_, reject) => setTimeout(() => reject('timeout'), 50)),
-        ])
-        if (result) {
-          const lines = Array.isArray(result) ? result : [result]
-          immediateInscription = lines
-          clearPrefetch(personId)
-          addNotes(personId, lines)
-        }
-      } catch (_) {
-        // Not ready yet — open without inscription, fetch below
-      }
-    }
-
+    const lines = horizonInscriptions[personId] || null
     setSelectedFace(face)
-    setInscription(immediateInscription)
-
-    // If no immediate inscription, fetch in the background
-    if (!immediateInscription) {
-      fetchInscription(face)
-    }
-  }, [getPersonId, fetchInscription])
+    setInscription(lines)
+  }, [getPersonId])
 
   // ─── Close handler (GSAP fade-out, then clear state) ────────
   const handleClose = useCallback(() => {
@@ -366,7 +176,6 @@ export default function Horizon() {
             className="horizon-card"
             key={i}
             onClick={() => handleCardClick(face)}
-            onMouseEnter={() => handleCardHover(face)}
           >
             {/* Glass frame with magnifying loupe */}
             <HorizonLoupe src={`/horizon/${encodeURIComponent(face.file)}`}>
@@ -422,7 +231,7 @@ export default function Horizon() {
               {selectedFace.catalog} &middot; {selectedFace.date}
             </p>
 
-            {/* Inscription zone — always present to avoid layout shift */}
+            {/* Inscription zone */}
             <div className="horizon-panel__inscription-zone">
               {inscription && inscription.length > 0 ? (
                 inscription.map((line, i) => (
