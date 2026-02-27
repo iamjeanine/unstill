@@ -24,14 +24,32 @@ class AudioManager {
     // Site ambient
     this._ambientBuffer = null
     this._ambientSource = null
+    this._ambientStarting = false
     this._ambientTargetVol = 1.0
+    this._bufferLoading = null
   }
 
-  // Must be called from a user gesture (click/scroll)
+  /**
+   * Preload the ambient audio buffer over the network.
+   * Called early (during loading screen) so the file is ready
+   * before the user's first interaction.
+   */
+  preload() {
+    if (this._ambientBuffer || this._bufferLoading) return
+    this._bufferLoading = fetch('/audio/site-ambient.mp3')
+      .then((r) => r.arrayBuffer())
+      .catch(() => null)
+  }
+
+  // Must be called from a user gesture (click/touch/key)
   init() {
     if (this.initialized) return
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)()
+
+      // Resume immediately inside the gesture — browsers require this
+      // to be synchronous with the user interaction event.
+      this.ctx.resume()
 
       // Master output
       this.masterGain = this.ctx.createGain()
@@ -60,19 +78,28 @@ class AudioManager {
     if (!this.initialized) this.init()
     if (!this.ctx) return
 
-    // Resume AudioContext if suspended
-    if (this.ctx.state === 'suspended') {
-      await this.ctx.resume()
-    }
+    // Don't restart if already playing or in the process of starting
+    if (this._ambientSource || this._ambientStarting) return
+    this._ambientStarting = true
 
-    // Load ambient buffer if not cached
+    // Decode the preloaded buffer (or fetch now if preload missed)
     if (!this._ambientBuffer) {
-      this._ambientBuffer = await this._loadBuffer('/audio/site-ambient.mp3')
-      if (!this._ambientBuffer) return
+      let arrayBuffer = this._bufferLoading ? await this._bufferLoading : null
+      if (!arrayBuffer) {
+        try {
+          const r = await fetch('/audio/site-ambient.mp3')
+          arrayBuffer = await r.arrayBuffer()
+        } catch (_) { this._ambientStarting = false; return }
+      }
+      try {
+        this._ambientBuffer = await this.ctx.decodeAudioData(arrayBuffer)
+      } catch (_) { this._ambientStarting = false; return }
     }
 
-    // Don't restart if already playing
-    if (this._ambientSource) return
+    // Re-resume — the gesture allowance may have expired during fetch
+    if (this.ctx.state === 'suspended') {
+      try { await this.ctx.resume() } catch (_) {}
+    }
 
     // Start ambient loop
     const source = this.ctx.createBufferSource()
@@ -188,17 +215,6 @@ class AudioManager {
   }
 
   // ─── HELPERS ─────────────────────────────────────────────
-
-  async _loadBuffer(url) {
-    try {
-      const response = await fetch(url)
-      const arrayBuffer = await response.arrayBuffer()
-      return await this.ctx.decodeAudioData(arrayBuffer)
-    } catch (e) {
-      console.warn(`AudioManager: Failed to load ${url}`, e)
-      return null
-    }
-  }
 
   _stopAmbientSource() {
     if (this._ambientSource) {

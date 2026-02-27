@@ -137,24 +137,16 @@ export default function App() {
     setIsLoaded(true)
   }, [])
 
-  // Initialize audio and start ambient on first user interaction.
-  // After HMR, the audioManager is preserved — if already initialized,
-  // skip waiting for a gesture (the original gesture already unlocked it).
+  // Preload audio buffer during loading screen so it's ready instantly.
   useEffect(() => {
-    if (audioManager.initialized) return
+    audioManager.preload()
+  }, [])
 
-    const events = ['click', 'scroll', 'touchstart', 'pointerdown', 'wheel']
-    const initAudio = () => {
-      events.forEach((e) => window.removeEventListener(e, initAudio))
-      audioManager.init()
-      audioManager.startAmbient()
-    }
-    events.forEach((e) =>
-      window.addEventListener(e, initAudio, { once: true, passive: true })
-    )
-    return () => {
-      events.forEach((e) => window.removeEventListener(e, initAudio))
-    }
+  // "Click to enter" — unlocks AudioContext and starts music.
+  // Called from LoadingScreen's onClick, which is a real user gesture.
+  const handleEnter = useCallback(() => {
+    audioManager.init()
+    audioManager.startAmbient()
   }, [])
 
   // ─── Track which scroll section is in view (for cursor) ──────
@@ -207,7 +199,7 @@ export default function App() {
       options={{ autoRaf: false, lerp: 0.055, duration: 1.6 }}
       ref={lenisRef}
     >
-      <LoadingScreen isLoaded={isLoaded} />
+      <LoadingScreen isLoaded={isLoaded} onEnter={handleEnter} />
       <Cursor interactionState={interactionState} scrollSection={scrollSection} />
 
       <Canvas

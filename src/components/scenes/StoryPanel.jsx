@@ -630,9 +630,13 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                   color: COLORS.text,
                   marginBottom: '2rem',
                 }}
-              >
-                {para}
-              </p>
+                dangerouslySetInnerHTML={{
+                  __html: para.replace(
+                    /\*([^*]+)\*/g,
+                    '<em>$1</em>'
+                  ),
+                }}
+              />
               )
             })}
           </div>

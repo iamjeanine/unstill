@@ -179,7 +179,7 @@ export default function Archive() {
           fontWeight: 300,
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
-          color: 'rgba(0, 0, 0, 0.2)',
+          color: 'rgba(0, 0, 0, 0.4)',
           pointerEvents: 'none',
           zIndex: 10,
           opacity: 0,
