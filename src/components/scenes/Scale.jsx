@@ -28,6 +28,18 @@ export default function Scale() {
     const section = sectionRef.current
     if (!section) return
 
+    // ── Fade out as viewer approaches the threshold ──
+    const numbersEl = section.querySelector('.scale-numbers')
+    ScrollTrigger.create({
+      trigger: section,
+      start: 'bottom 30%',
+      end: 'bottom top',
+      scrub: true,
+      onUpdate: (self) => {
+        gsap.set(numbersEl, { opacity: 1 - self.progress })
+      },
+    })
+
     // ── Scale numbers — count up from zero ──
     const scaleLines = section.querySelectorAll('.scale-line')
     scaleLines.forEach((line, i) => {

@@ -49,6 +49,31 @@ export default function Closing({ audioManager }) {
       },
     })
 
+    // ── Withdrawal: the site progressively stops responding ──
+    const grainEl = section.querySelector('.film-grain')
+    const withdrawalTrigger = ScrollTrigger.create({
+      trigger: section,
+      start: 'top 60%',
+      end: 'bottom 80%',
+      scrub: true,
+      onUpdate: (self) => {
+        const p = self.progress
+        // Broadcast to cursor, counter
+        window.dispatchEvent(
+          new CustomEvent('unstill:withdrawal', {
+            detail: { progress: p },
+          })
+        )
+        // Grain fades to zero
+        if (grainEl) gsap.set(grainEl, { opacity: 0.02 * (1 - p) })
+        // Kill interactive elements past 80% withdrawal
+        const scrollContent = document.querySelector('.scroll-content')
+        if (scrollContent) {
+          scrollContent.style.pointerEvents = p > 0.8 ? 'none' : ''
+        }
+      },
+    })
+
     // ── The closing line arrives — slow, monumental ──
     const statementTrigger = ScrollTrigger.create({
       trigger: statementEl,
@@ -104,6 +129,7 @@ export default function Closing({ audioManager }) {
 
     return () => {
       voidTrigger.kill()
+      withdrawalTrigger.kill()
       statementTrigger.kill()
       dividerTrigger.kill()
     }
@@ -115,8 +141,7 @@ export default function Closing({ audioManager }) {
 
       <div className="closing-content">
         <p className="closing-statement">
-          The archive kept records.<br />
-          You just kept company.
+          The archive kept records. You just kept company.
         </p>
 
         <div className="invitation-block">

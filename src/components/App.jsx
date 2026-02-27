@@ -12,6 +12,7 @@ import Closing from './scenes/Closing'
 import Cursor from './ui/Cursor'
 import LoadingScreen from './ui/LoadingScreen'
 import MuteButton from './ui/MuteButton'
+import ArchiveCounter from './ui/ArchiveCounter'
 import AudioManager from '../engine/AudioManager'
 import { INTERACTION_STATES } from '../data/sceneConfig'
 import { people } from '../data/people'
@@ -39,6 +40,7 @@ export default function App() {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [storyClosing, setStoryClosing] = useState(false) // true while panel fades out
+  const [scrollSection, setScrollSection] = useState('entry')
   const closingPersonRef = useRef(null) // keep person data during exit fade
   const lenisRef = useRef(null)
 
@@ -156,6 +158,33 @@ export default function App() {
     }
   }, [])
 
+  // ─── Track which scroll section is in view (for cursor) ──────
+  useEffect(() => {
+    const sectionMap = [
+      { selector: '.scene--closing', name: 'closing' },
+      { selector: '.scene--horizon', name: 'horizon' },
+      { selector: '.scene--scale', name: 'scale' },
+      { selector: '.scene--hartman', name: 'hartman' },
+      { selector: '.scene--entry', name: 'entry' },
+    ]
+
+    const observers = []
+    sectionMap.forEach(({ selector, name }) => {
+      const el = document.querySelector(selector)
+      if (!el) return
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) setScrollSection(name)
+        },
+        { threshold: 0.3 }
+      )
+      observer.observe(el)
+      observers.push(observer)
+    })
+
+    return () => observers.forEach((o) => o.disconnect())
+  }, [])
+
   // Listen for story navigation events from InteractionManager
   useEffect(() => {
     const handleNavigateFromEngine = (e) => {
@@ -180,7 +209,7 @@ export default function App() {
       ref={lenisRef}
     >
       <LoadingScreen isLoaded={isLoaded} />
-      <Cursor interactionState={interactionState} />
+      <Cursor interactionState={interactionState} scrollSection={scrollSection} />
 
       <Canvas
         onStateChange={handleStateChange}
@@ -191,8 +220,10 @@ export default function App() {
       <main className="scroll-content">
         <Entry audioManager={audioManager} />
         <Archive />
+        <div className="threshold threshold--archive" aria-hidden="true" />
         <HartmanQuote />
         <Scale />
+        <div className="threshold" aria-hidden="true" />
         <Horizon />
         <Closing audioManager={audioManager} />
       </main>
@@ -213,6 +244,8 @@ export default function App() {
       {interactionState === INTERACTION_STATES.DEEP_DIVE && activePerson && (
         <VideoContainer person={activePerson} />
       )}
+
+      <ArchiveCounter />
 
       <MuteButton
         isMuted={isMuted}

@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useLenis } from 'lenis/react'
 import horizonInscriptions from '../../data/horizonInscriptions.json'
 import HorizonLoupe from '../ui/HorizonLoupe'
 
@@ -69,25 +70,26 @@ export default function Horizon() {
   const overlayRef = useRef(null)
   const panelRef = useRef(null)
 
-  // ─── Staggered entrance animation ────────────────────────────
+  // ─── Staggered entrance + ambient drift ──────────────────────
+  const driftTweens = useRef([])
+  const masonryRef = useRef(null)
+
   useEffect(() => {
     const section = sectionRef.current
     if (!section) return
 
     const cards = section.querySelectorAll('.horizon-card')
-    const masonryEl = section.querySelector('.horizon-masonry')
+    const masonryEl = masonryRef.current || section.querySelector('.horizon-masonry')
 
     // Staggered entrance — reveal by column for an architectural feel.
     // CSS multi-column flows cards top-to-bottom across columns, so we
     // compute column index from DOM position and stagger by column group.
     const columnCount = parseInt(getComputedStyle(masonryEl).columnCount) || 3
     cards.forEach((card, i) => {
-      // In CSS multi-column, items flow down columns. Approximate column
-      // assignment: items fill columns roughly evenly top-to-bottom.
       const col = i % columnCount
       const row = Math.floor(i / columnCount)
-      const columnDelay = col * 0.2        // 0.2s between columns
-      const intraDelay = row * 0.06        // 0.06s between cards within a column
+      const columnDelay = col * 0.2
+      const intraDelay = row * 0.06
 
       gsap.set(card, { opacity: 0, y: 28 })
       ScrollTrigger.create({
@@ -100,6 +102,25 @@ export default function Horizon() {
             duration: 0.9,
             delay: columnDelay + intraDelay,
             ease: 'power2.out',
+            onComplete: () => {
+              // Release inline opacity so CSS hover isolation works equally
+              card.style.removeProperty('opacity')
+              // Skip drift on small screens (no hover either)
+              if (window.innerWidth <= 480) return
+              // Ambient drift — each card floats independently.
+              // Different duration + delay per card so they never sync.
+              const duration = 3.5 + (i % 5) * 0.7   // 3.5s–6.3s
+              const delay = (i % 7) * 0.4              // phase offset
+              const drift = gsap.to(card, {
+                y: -1,
+                duration,
+                delay,
+                repeat: -1,
+                yoyo: true,
+                ease: 'sine.inOut',
+              })
+              driftTweens.current.push(drift)
+            },
           })
         },
       })
@@ -109,6 +130,46 @@ export default function Horizon() {
       ScrollTrigger.getAll().forEach((t) => {
         if (t.trigger && section.contains(t.trigger)) t.kill()
       })
+      driftTweens.current.forEach((t) => t.kill())
+      driftTweens.current = []
+    }
+  }, [])
+
+  // ─── Mouse-reactive tilt — the surface moves as one object ──
+  useEffect(() => {
+    const masonry = masonryRef.current
+    if (!masonry || window.innerWidth <= 768) return
+
+    const onMouseMove = (e) => {
+      const rect = masonry.getBoundingClientRect()
+      // Normalized -1 to 1 relative to masonry center
+      const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2
+      const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2
+      gsap.to(masonry, {
+        rotateY: nx * 0.5,
+        rotateX: 2 - ny * 0.5,  // base 2deg + mouse offset
+        duration: 0.8,
+        ease: 'power2.out',
+        overwrite: true,
+      })
+    }
+
+    const onMouseLeave = () => {
+      gsap.to(masonry, {
+        rotateY: 0,
+        rotateX: 2,
+        duration: 1.2,
+        ease: 'power2.out',
+        overwrite: true,
+      })
+    }
+
+    masonry.addEventListener('mousemove', onMouseMove)
+    masonry.addEventListener('mouseleave', onMouseLeave)
+
+    return () => {
+      masonry.removeEventListener('mousemove', onMouseMove)
+      masonry.removeEventListener('mouseleave', onMouseLeave)
     }
   }, [])
 
@@ -116,6 +177,27 @@ export default function Horizon() {
   const getPersonId = useCallback((face) => {
     return face.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')
   }, [])
+
+  // ─── Hover lift — pauses drift, lifts card, resumes on leave ─
+  const handleCardEnter = useCallback((e) => {
+    const card = e.currentTarget
+    const drift = driftTweens.current.find((t) => t.targets().includes(card))
+    if (drift) drift.pause()
+    gsap.to(card, { y: -3, duration: 0.4, ease: 'power2.out' })
+  }, [])
+  const handleCardLeave = useCallback((e) => {
+    const card = e.currentTarget
+    const drift = driftTweens.current.find((t) => t.targets().includes(card))
+    gsap.to(card, {
+      y: 0,
+      duration: 0.5,
+      ease: 'power2.inOut',
+      onComplete: () => { if (drift) drift.resume() },
+    })
+  }, [])
+
+  // ─── Lenis scroll lock — prevent page scroll behind panel ────
+  const lenis = useLenis()
 
   // ─── Click handler ───────────────────────────────────────────
   // Instant — reads from pre-generated static data. No API calls,
@@ -125,13 +207,15 @@ export default function Horizon() {
     const lines = horizonInscriptions[personId] || null
     setSelectedFace(face)
     setInscription(lines)
-  }, [getPersonId])
+    if (lenis) lenis.stop()
+  }, [getPersonId, lenis])
 
   // ─── Close handler (GSAP fade-out, then clear state) ────────
   const handleClose = useCallback(() => {
     const overlay = overlayRef.current
     if (!overlay) {
       setSelectedFace(null)
+      if (lenis) lenis.start()
       return
     }
     gsap.to(overlay, {
@@ -141,9 +225,10 @@ export default function Horizon() {
       onComplete: () => {
         setSelectedFace(null)
         setInscription(null)
+        if (lenis) lenis.start()
       },
     })
-  }, [])
+  }, [lenis])
 
   // ─── Escape key ──────────────────────────────────────────────
   useEffect(() => {
@@ -170,32 +255,36 @@ export default function Horizon() {
 
   return (
     <section ref={sectionRef} className="scene scene--horizon">
-      <div className="horizon-masonry">
-        {shuffledFaces.map((face, i) => (
-          <div
-            className="horizon-card"
-            key={i}
-            onClick={() => handleCardClick(face)}
-          >
-            {/* Glass frame with magnifying loupe */}
-            <HorizonLoupe src={`/horizon/${encodeURIComponent(face.file)}`}>
-              <div className="horizon-frame">
-                <img
-                  src={`/horizon/${encodeURIComponent(face.file)}`}
-                  alt={face.name}
-                  loading="lazy"
-                />
-                <div className="horizon-vignette" />
-              </div>
-            </HorizonLoupe>
+      <div className="horizon-stage">
+        <div ref={masonryRef} className="horizon-masonry">
+          {shuffledFaces.map((face, i) => (
+            <div
+              className="horizon-card"
+              key={i}
+              onClick={() => handleCardClick(face)}
+              onMouseEnter={handleCardEnter}
+              onMouseLeave={handleCardLeave}
+            >
+              {/* Glass frame with magnifying loupe */}
+              <HorizonLoupe src={`/horizon/${encodeURIComponent(face.file)}`}>
+                <div className="horizon-frame">
+                  <img
+                    src={`/horizon/${encodeURIComponent(face.file)}`}
+                    alt={face.name}
+                    loading="lazy"
+                  />
+                  <div className="horizon-vignette" />
+                </div>
+              </HorizonLoupe>
 
-            {/* Catalog label */}
-            <div className="horizon-label">
-              <span className="horizon-label__name">{face.name}</span>
-              <span className="horizon-label__meta">{face.catalog} &middot; {face.date}</span>
+              {/* Catalog label */}
+              <div className="horizon-label">
+                <span className="horizon-label__name">{face.name}</span>
+                <span className="horizon-label__meta">{face.catalog} &middot; {face.date}</span>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* ── Inscription panel overlay ── */}

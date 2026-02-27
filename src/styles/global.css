@@ -129,6 +129,38 @@ button {
   overflow: hidden;
 }
 
+/* Perspective wrapper — isolated so it doesn't break
+   position:fixed on the inscription overlay */
+.horizon-stage {
+  perspective: 1200px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   THRESHOLD — Dark corridors between rooms.
+   Pure darkness. No content. The audio continues.
+   You're between things. The next room hasn't arrived yet.
+   ═══════════════════════════════════════════════════════════ */
+
+.threshold {
+  height: 35vh;
+  background: var(--color-void);
+  flex-shrink: 0;
+}
+
+/* Archive→Hartman threshold includes the cream-to-void gradient */
+.threshold--archive {
+  height: 60vh;
+  background: linear-gradient(
+    to bottom,
+    var(--color-bg) 0%,
+    var(--color-void) 36%,
+    var(--color-void) 100%
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════
    HARTMAN QUOTE — The Threshold.
    Full-viewport standalone. Museum wall quote.
@@ -142,14 +174,6 @@ button {
   flex-direction: column;
   align-items: center;
   overflow: hidden;
-}
-
-/* Threshold — cream fades into the void */
-.hartman-gradient {
-  width: 100%;
-  height: 40vh;
-  background: linear-gradient(to bottom, var(--color-bg), var(--color-void));
-  flex-shrink: 0;
 }
 
 /* Centering container — the quote owns the full screen */
@@ -173,10 +197,10 @@ button {
   font-family: var(--font-display);
   font-style: italic;
   font-weight: 400;
-  font-size: clamp(2rem, 4.5vw, 3.8rem);
-  color: rgba(232, 228, 214, 0.85);
-  line-height: 1.35;
-  letter-spacing: -0.01em;
+  font-size: clamp(2.4rem, 5.5vw, 4.5rem);
+  color: rgba(232, 228, 214, 0.88);
+  line-height: 1.3;
+  letter-spacing: -0.015em;
 }
 
 .hartman-quote__cite {
@@ -196,12 +220,24 @@ button {
    The column gap is the dark table between the plates. */
 .horizon-masonry {
   column-count: 3;
+  column-fill: balance;
   column-gap: 20px;
   max-width: 960px;
   width: 100%;
   margin-top: 8vh;
   position: relative;
   z-index: 0;
+  transform-style: preserve-3d;
+  transform: rotateX(2deg);
+}
+
+/* Hover isolation — the chosen face emerges, the rest recede */
+.horizon-masonry:hover .horizon-card {
+  opacity: 0.7;
+  transition: opacity 0.4s ease;
+}
+.horizon-masonry:hover .horizon-card:hover {
+  opacity: 1;
 }
 
 /* ── Card — glass plate on the table ──
@@ -215,7 +251,7 @@ button {
 }
 
 .horizon-card:hover {
-  transform: translateY(-3px);
+  /* Lift handled by GSAP to compose with ambient drift */
 }
 
 /* ── Image frame — elevated glass surface ──
@@ -368,8 +404,8 @@ button {
   z-index: 40;
   background: rgba(5, 5, 5, 0.92);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   cursor: pointer;
 }
 
@@ -379,6 +415,9 @@ button {
   width: 90vw;
   text-align: center;
   position: relative;
+  margin: auto;
+  flex-shrink: 0;
+  padding: 6vh 0;
 }
 
 .horizon-panel__close {
@@ -429,6 +468,7 @@ button {
 
 .horizon-panel__inscription-zone {
   margin-top: 1rem;
+  min-height: 60px;
   position: relative;
 }
 
@@ -486,6 +526,24 @@ button {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   ARCHIVE COUNTER — "X of 2,500"
+   A quiet fact in the corner. Not a UI element.
+   ═══════════════════════════════════════════════════════════ */
+
+.archive-counter {
+  position: fixed;
+  bottom: 28px;
+  left: 28px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(232, 228, 214, 0.3);
+  z-index: 50;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
    CLOSING — The Final Frame.
    Words arrive, the room goes quiet, you sit with it.
    ═══════════════════════════════════════════════════════════ */
@@ -521,7 +579,7 @@ button {
   color: rgba(232, 228, 214, 0.88);
   text-align: center;
   line-height: 1.45;
-  max-width: 680px;
+  max-width: 480px;
   padding: 0 20px;
   letter-spacing: -0.01em;
 }
@@ -570,10 +628,10 @@ button {
 
 .scale-text {
   font-family: var(--font-body);
-  font-size: clamp(14px, 1.3vw, 18px);
+  font-size: clamp(16px, 1.5vw, 20px);
   font-weight: 400;
-  color: rgba(232, 228, 214, 0.7);
-  line-height: 1.4;
+  color: rgba(232, 228, 214, 0.8);
+  line-height: 1.45;
 }
 
 /* Invitation block — earned, not announced */
@@ -641,23 +699,30 @@ button {
 }
 
 @media (max-width: 768px) {
+  .horizon-stage {
+    perspective: none;
+  }
   .horizon-masonry {
     column-count: 2;
     max-width: 500px;
     column-gap: 14px;
+    transform: none;
   }
   .horizon-card {
     margin-bottom: 14px;
   }
-  .hartman-gradient {
-    height: 25vh;
+  .threshold {
+    height: 28vh;
+  }
+  .threshold--archive {
+    height: 45vh;
   }
   .hartman-quote {
     min-height: 75vh;
     padding: 12vh 5vw 12vh;
   }
   .hartman-quote__text {
-    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-size: clamp(1.8rem, 4.5vw, 2.8rem);
   }
   .horizon-label__name {
     font-size: 10px;
@@ -696,6 +761,12 @@ button {
 }
 
 @media (max-width: 480px) {
+  .threshold {
+    height: 22vh;
+  }
+  .threshold--archive {
+    height: 35vh;
+  }
   .horizon-masonry {
     column-count: 1;
     max-width: 340px;
@@ -714,7 +785,7 @@ button {
     font-size: 13px;
   }
   .hartman-quote__text {
-    font-size: clamp(1.4rem, 5vw, 2rem);
+    font-size: clamp(1.5rem, 5.5vw, 2.2rem);
   }
   .hartman-quote {
     min-height: 65vh;

@@ -73,9 +73,6 @@ export default function HartmanQuote() {
 
   return (
     <section ref={sectionRef} className="scene scene--hartman">
-      {/* Threshold — cream fades into the void */}
-      <div className="hartman-gradient" />
-
       <div className="hartman-quote">
         <blockquote className="hartman-quote__block">
           <p className="hartman-quote__text">

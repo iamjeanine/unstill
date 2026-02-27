@@ -1,17 +1,13 @@
 /**
- * AudioManager — File-based ambient audio with crossfading.
- *
- * Both site ambient and story audio use Web Audio API AudioBufferSourceNode
- * routed through separate gain nodes for independent volume control.
+ * AudioManager — One continuous ambient track.
  *
  * Architecture:
  *   site-ambient: AudioBufferSource → ambientGain → masterGain → ctx.destination
- *   story-audio:  AudioBufferSource → storyGain   → masterGain → ctx.destination
  *   video-audio:  (external)        → videoGain   → masterGain → ctx.destination
+ *
+ * Story panels just dip the ambient so the video audio has room.
+ * No separate story cue — the ambient carries the whole experience.
  */
-
-// All stories share one cue — Elsie's piano works for every portrait
-const STORY_CUE = '/audio/elsie-paul.mp3'
 
 const CROSSFADE_MS = 1500
 
@@ -20,21 +16,15 @@ class AudioManager {
     this.ctx = null
     this.masterGain = null
     this.ambientGain = null
-    this.storyGain = null
     this.videoGain = null
     this.initialized = false
     this.muted = false
     this._currentStoryId = null
 
-    // Site ambient — Web Audio API BufferSource (same as story)
+    // Site ambient
     this._ambientBuffer = null
     this._ambientSource = null
     this._ambientTargetVol = 1.0
-
-    // Story audio — single shared cue for all stories
-    this._storyCueBuffer = null
-    this._storySource = null
-    this._storyStopTimer = null
   }
 
   // Must be called from a user gesture (click/scroll)
@@ -52,11 +42,6 @@ class AudioManager {
       this.ambientGain = this.ctx.createGain()
       this.ambientGain.gain.value = 0.0
       this.ambientGain.connect(this.masterGain)
-
-      // Story layer
-      this.storyGain = this.ctx.createGain()
-      this.storyGain.gain.value = 0.0
-      this.storyGain.connect(this.masterGain)
 
       // Video layer
       this.videoGain = this.ctx.createGain()
@@ -139,71 +124,21 @@ class AudioManager {
 
   // ─── STORY ENTER / EXIT ──────────────────────────────────
 
-  async enterStory(personId) {
+  enterStory(personId) {
     if (!this.initialized) return
     this._currentStoryId = personId
 
-    // Cancel any pending story stop
-    if (this._storyStopTimer) {
-      clearTimeout(this._storyStopTimer)
-      this._storyStopTimer = null
-    }
-
-    // Stop any existing story source
-    this._stopStorySource()
-
-    // Fade ambient down — still present underneath
-    this._fadeAmbient(0.15, CROSSFADE_MS)
-
-    // Load shared story cue if not cached
-    if (!this._storyCueBuffer) {
-      this._storyCueBuffer = await this._loadBuffer(STORY_CUE)
-      if (!this._storyCueBuffer) return
-    }
-
-    // Start story audio loop
-    const source = this.ctx.createBufferSource()
-    source.buffer = this._storyCueBuffer
-    source.loop = true
-    source.connect(this.storyGain)
-    source.start()
-    this._storySource = source
-
-    // Fade story in — present but not dominant, sits under the essay
-    const now = this.ctx.currentTime
-    this.storyGain.gain.cancelScheduledValues(now)
-    this.storyGain.gain.setTargetAtTime(
-      this.muted ? 0 : 0.3,
-      now,
-      CROSSFADE_MS * 0.00033 // time constant in seconds
-    )
+    // Dip the ambient so video audio has room
+    this._fadeAmbient(0.18, CROSSFADE_MS)
   }
 
   exitStory() {
     if (!this.initialized) return
-
-    // Guard: if already exiting or no story playing, skip
-    if (!this._currentStoryId && !this._storySource) return
+    if (!this._currentStoryId) return
     this._currentStoryId = null
 
-    const now = this.ctx.currentTime
-
-    // Fast fade-out: time constant 0.15s → ~95% faded by 0.5s
-    this.storyGain.gain.cancelScheduledValues(now)
-    this.storyGain.gain.setTargetAtTime(0, now, 0.15)
-
-    // Fade ambient back up
-    this._fadeAmbient(1.0, CROSSFADE_MS)
-
-    // Kill story source after fade (0.8s is plenty for the fast fade)
-    if (this._storyStopTimer) clearTimeout(this._storyStopTimer)
-    this._storyStopTimer = setTimeout(() => {
-      this._stopStorySource()
-      // Force gain to absolute zero
-      this.storyGain.gain.cancelScheduledValues(this.ctx.currentTime)
-      this.storyGain.gain.value = 0
-      this._storyStopTimer = null
-    }, 800)
+    // Bring ambient back up
+    this._fadeAmbient(0.55, CROSSFADE_MS)
   }
 
   // ─── VIDEO ENTER / EXIT ──────────────────────────────────
@@ -211,7 +146,6 @@ class AudioManager {
   enterVideo() {
     if (!this.initialized) return
     this._fadeAmbient(0, 300)
-    this.storyGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1)
     this.videoGain.gain.setTargetAtTime(
       this.muted ? 0 : 1.0,
       this.ctx.currentTime,
@@ -223,11 +157,11 @@ class AudioManager {
     if (!this.initialized) return
     this.videoGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1)
 
+    // Return ambient to story-dipped level or full
     if (this._currentStoryId) {
-      this.storyGain.gain.setTargetAtTime(0.3, this.ctx.currentTime, 0.15)
-      this._fadeAmbient(0.15, 600)
+      this._fadeAmbient(0.18, 600)
     } else {
-      this._fadeAmbient(1.0, 600)
+      this._fadeAmbient(0.55, 600)
     }
   }
 
@@ -266,14 +200,6 @@ class AudioManager {
     }
   }
 
-  _stopStorySource() {
-    if (this._storySource) {
-      try { this._storySource.stop() } catch (e) {}
-      try { this._storySource.disconnect() } catch (e) {}
-      this._storySource = null
-    }
-  }
-
   _stopAmbientSource() {
     if (this._ambientSource) {
       try { this._ambientSource.stop() } catch (e) {}
@@ -287,17 +213,7 @@ class AudioManager {
   }
 
   dispose() {
-    // Stop ambient
     this._stopAmbientSource()
-
-    // Stop story
-    this._stopStorySource()
-    if (this._storyStopTimer) {
-      clearTimeout(this._storyStopTimer)
-    }
-
-    // Clear caches
-    this._storyCueBuffer = null
     this._ambientBuffer = null
 
     if (this.ctx) {

@@ -27,19 +27,23 @@ const QUEUE_DELAY_MS = 1500
 let _queue = Promise.resolve()
 
 function enqueue(fn) {
+  // Each caller gets its own promise that resolves with its own result.
+  // The shared _queue chain ensures calls run one at a time with a gap.
+  let resolve
+  const callerPromise = new Promise((r) => { resolve = r })
+
   _queue = _queue
     .then(() => fn())
     .then((result) => {
-      return new Promise((resolve) =>
-        setTimeout(() => resolve(result), QUEUE_DELAY_MS)
-      )
+      resolve(result)
+      return new Promise((r) => setTimeout(r, QUEUE_DELAY_MS))
     })
-    .catch((err) => {
-      return new Promise((resolve) =>
-        setTimeout(() => resolve(null), QUEUE_DELAY_MS)
-      )
+    .catch(() => {
+      resolve(null)
+      return new Promise((r) => setTimeout(r, QUEUE_DELAY_MS))
     })
-  return _queue
+
+  return callerPromise
 }
 
 // ─── API call ───────────────────────────────────────────────────────
@@ -58,8 +62,14 @@ function enqueue(fn) {
  * @param {string[]} params.previousNotes — Lines from previous API calls this session
  * @returns {Promise<string|null>} The inscription lines (newline-separated), or null on failure
  */
+// Queued — for batch prefetch. Calls wait their turn.
 export function generateMarginalia(params) {
   return enqueue(() => _callAPI(params))
+}
+
+// Immediate — for user-initiated clicks. Bypasses the queue.
+export function generateMarginaliaImmediate(params) {
+  return _callAPI(params)
 }
 
 async function _callAPI({
