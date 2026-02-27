@@ -125,8 +125,8 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 5vw 6vh;
-  overflow: hidden;
+  padding: 0 5vw 10vh;
+  overflow: clip;
 }
 
 /* Perspective wrapper — isolated so it doesn't break
@@ -226,7 +226,7 @@ button {
   width: 100%;
   margin-top: 8vh;
   position: relative;
-  z-index: 0;
+  z-index: 5;
   transform-style: preserve-3d;
   transform: rotateX(2deg);
 }

@@ -199,14 +199,42 @@ export default function Horizon() {
   // ─── Lenis scroll lock — prevent page scroll behind panel ────
   const lenis = useLenis()
 
+  // Track which lines have been shown per person so repeats are avoided
+  const shownRef = useRef({})
+
   // ─── Click handler ───────────────────────────────────────────
-  // Instant — reads from pre-generated static data. No API calls,
-  // no loading, no rate limits. 100% reliable for demos.
+  // Picks 2 random lines from the pool, avoiding previously shown pairs.
+  // Static data — no API calls, no cost.
   const handleCardClick = useCallback((face) => {
     const personId = getPersonId(face)
-    const lines = horizonInscriptions[personId] || null
+    const allLines = horizonInscriptions[personId]
+    if (!allLines || allLines.length === 0) {
+      setSelectedFace(face)
+      setInscription(null)
+      if (lenis) lenis.stop()
+      return
+    }
+
+    // Build a set of indices we haven't shown yet for this person
+    if (!shownRef.current[personId]) shownRef.current[personId] = []
+    const shown = shownRef.current[personId]
+
+    // Get available indices (not yet shown)
+    let available = allLines.map((_, i) => i).filter((i) => !shown.includes(i))
+
+    // If we've exhausted the pool, reset and start fresh
+    if (available.length < 2) {
+      shownRef.current[personId] = []
+      available = allLines.map((_, i) => i)
+    }
+
+    // Pick 2 random indices from available
+    const shuffled = available.sort(() => Math.random() - 0.5)
+    const picked = [shuffled[0], shuffled[1]]
+    picked.forEach((i) => shownRef.current[personId].push(i))
+
     setSelectedFace(face)
-    setInscription(lines)
+    setInscription(picked.map((i) => allLines[i]))
     if (lenis) lenis.stop()
   }, [getPersonId, lenis])
 
