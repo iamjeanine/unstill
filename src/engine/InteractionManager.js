@@ -431,7 +431,6 @@ class InteractionManager {
           previousNotes,
         })
         if (!text) return null
-        // Take only the last 3 non-empty lines — strips any preamble the model adds
         const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0).slice(-3)
         if (lines.length === 0) return null
         addNotes(personData.id, lines)

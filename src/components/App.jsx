@@ -4,7 +4,6 @@ import Canvas from './Canvas'
 import Entry from './scenes/Entry'
 import Archive from './scenes/Archive'
 import StoryPanel from './scenes/StoryPanel'
-import VideoContainer from './scenes/VideoContainer'
 import HartmanQuote from './scenes/HartmanQuote'
 import Scale from './scenes/Scale'
 import Horizon from './scenes/Horizon'
@@ -239,10 +238,6 @@ export default function App() {
           onCloseComplete={handleCloseStoryComplete}
           onNavigate={handleNavigateStory}
         />
-      )}
-
-      {interactionState === INTERACTION_STATES.DEEP_DIVE && activePerson && (
-        <VideoContainer person={activePerson} />
       )}
 
       <ArchiveCounter />

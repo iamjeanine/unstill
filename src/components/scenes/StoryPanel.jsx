@@ -2,8 +2,9 @@ import { useRef, useEffect, useCallback, useState, useMemo } from 'react'
 import gsap from 'gsap'
 import { people } from '../../data/people'
 import StoryLoupe from '../ui/StoryLoupe'
-import { generateMarginalia } from '../../engine/MarginaliaAPI'
+import { generateMarginaliaImmediate } from '../../engine/MarginaliaAPI'
 import { getPreviousNotes, addNotes, consumePrefetch, clearPrefetch } from '../../engine/marginaliaSessionStore'
+import storyInscriptions from '../../data/storyInscriptions.json'
 
 /**
  * StoryPanel — "The Lightbox with Focus Gradient"
@@ -256,9 +257,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
     }
   }, [])
 
-  // ─── Inscription trigger logic (prefetch-first, then fallback) ──
-  // Uses a ref-based abort guard instead of closure boolean so that
-  // React 18 Strict Mode double-mounts don't discard valid results.
+  // ─── Inscription trigger logic (prefetch-first, API fallback, static last resort) ──
   const fetchIdRef = useRef(0)
 
   useEffect(() => {
@@ -278,9 +277,9 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
         }
       }
 
-      // Fallback: fresh API call
+      // Fallback: fresh API call via serverless proxy
       const previousNotes = getPreviousNotes(person.id)
-      const text = await generateMarginalia({
+      const text = await generateMarginaliaImmediate({
         personId: person.id,
         personName: person.displayName,
         age: person.ages.join(' & '),
@@ -291,11 +290,20 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
         previousNotes,
       })
 
-      if (isStale() || !text) return
-      const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0).slice(-3)
-      if (lines.length === 0) return
-      addNotes(person.id, lines)
-      setInscriptionLines(lines)
+      if (isStale()) return
+
+      if (text) {
+        const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0).slice(-3)
+        if (lines.length > 0) {
+          addNotes(person.id, lines)
+          setInscriptionLines(lines)
+          return
+        }
+      }
+
+      // Last resort: static pre-generated inscriptions
+      const staticLines = storyInscriptions[person.id] || null
+      if (!isStale()) setInscriptionLines(staticLines)
     }
 
     fetchInscription()

@@ -19,10 +19,6 @@ export const people = [
       color: '/mugshots/Faygreen.png',
     },
     dimensions: { width: 1184, height: 864 },
-    video: {
-      portrait: null, // Fay_and_Elsie.mp4
-      narrative: null, // Strange_Nights__vo__2_2.mp4
-    },
     animation: '/animations/fay-watson.mp4',
     connections: ['elsie-paul'],
     scene: 'archive',
@@ -48,10 +44,6 @@ export const people = [
       color: '/mugshots/elsie-paul.jpg',
     },
     dimensions: { width: 1600, height: 1194 },
-    video: {
-      portrait: null,
-      narrative: null,
-    },
     animation: '/animations/elsie-paul.mp4',
     connections: ['fay-watson'],
     scene: 'archive',
@@ -75,10 +67,6 @@ export const people = [
     },
     uvCrop: [0.01, 0.02, 0.93, 0.95], // push-in to hide star watermark (bottom-right)
     dimensions: { width: 1264, height: 848 },
-    video: {
-      portrait: null,
-      narrative: null, // Edna_May_LIndsay.mp4
-    },
     animation: '/animations/edna-may.mp4',
     connections: [],
     scene: 'archive',
@@ -102,10 +90,6 @@ export const people = [
     },
     uvCrop: [0.01, 0.02, 0.94, 0.96], // push-in to hide star watermark (bottom-right)
     dimensions: { width: 1600, height: 1173 },
-    video: {
-      portrait: null, // Henry_Pierce.mp4
-      narrative: null,
-    },
     animation: '/animations/henry-pierce.mp4',
     connections: ['marie-elliott', 'patsy-neill'],
     scene: 'archive',
@@ -129,10 +113,6 @@ export const people = [
     },
     uvCrop: [0.02, 0.02, 0.94, 0.94], // push-in to hide star watermark (bottom-right)
     dimensions: { width: 1600, height: 1173 },
-    video: {
-      portrait: null,
-      narrative: null, // Marie_Elliot.mp4
-    },
     animation: '/animations/marie-elliott.mp4',
     connections: ['henry-pierce', 'patsy-neill'],
     scene: 'archive',
@@ -155,10 +135,6 @@ export const people = [
       color: '/mugshots/patsy-neill.jpeg',
     },
     dimensions: { width: 1600, height: 1173 },
-    video: {
-      portrait: null, // Patsy_Neill3.mp4
-      narrative: null,
-    },
     animation: '/animations/patsy-neill.mp4',
     connections: ['marie-elliott', 'henry-pierce'],
     scene: 'archive',
@@ -181,10 +157,6 @@ export const people = [
       color: '/mugshots/nellie-cameron.jpeg',
     },
     dimensions: { width: 1600, height: 1158 },
-    video: {
-      portrait: null, // Nellie_Cameron.mp4
-      narrative: null,
-    },
     animation: '/animations/nellie-cameron.mp4',
     connections: [],
     scene: 'archive',
