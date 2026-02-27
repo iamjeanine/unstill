@@ -10,20 +10,18 @@ gsap.registerPlugin(ScrollTrigger)
 /**
  * Horizon — The Light Table.
  *
- * CSS multi-column masonry layout. Images flow down columns and pack
- * tightly regardless of aspect ratio — no forced row alignment, no
- * cropping, no wasted space. Each photograph gets exactly the height
- * it needs.
+ * Flex-column masonry layout. Cards distributed round-robin into 3
+ * explicit columns. Each photograph gets exactly the height it needs.
  *
  * Every image sits in an elevated glass card — frosted surface, inset
  * top-edge highlight, multi-layered shadow, coral glow on hover.
  * Catalog metadata beneath each plate in monospace.
  *
- * Click opens a minimal inscription panel — one AI-generated sentence
- * about the world this person existed in. A museum moment.
+ * Click opens a minimal inscription panel — historically researched
+ * facts about each person. Two random facts shown per click, cycling
+ * through the pool without repeats within a session.
  *
- * Order is curated: alternating landscape and portrait creates visual
- * rhythm across the columns. Staggered entrance animation.
+ * Staggered entrance animation. Ambient drift on desktop.
  */
 
 const horizonFaces = [
@@ -64,11 +62,46 @@ export default function Horizon() {
   const sectionRef = useRef(null)
   const shuffledFaces = useMemo(() => seededShuffle(horizonFaces, sessionSeed), [])
 
+  // Distribute cards into 3 columns (round-robin) for flex layout
+  const columns = useMemo(() => {
+    const cols = [[], [], []]
+    shuffledFaces.forEach((face, i) => cols[i % 3].push({ face, index: i }))
+    return cols
+  }, [shuffledFaces])
+
   // ─── Inscription panel state ─────────────────────────────────
   const [selectedFace, setSelectedFace] = useState(null)
   const [inscription, setInscription] = useState(null)
   const overlayRef = useRef(null)
   const panelRef = useRef(null)
+
+  // ─── Ensure WebGL canvas doesn't block Horizon interaction ───
+  // The archive section enables pointer-events on the fixed canvas.
+  // Use a ScrollTrigger that continuously enforces pointer-events: none
+  // while any part of the Horizon section is in view. This is more
+  // robust than an IntersectionObserver which only fires on threshold
+  // crossings and can miss late toggles from other ScrollTriggers.
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+    const canvas = document.querySelector('.webgl-canvas')
+    if (!canvas) return
+
+    const guard = ScrollTrigger.create({
+      trigger: section,
+      start: 'top bottom',   // as soon as section enters viewport
+      end: 'bottom top',     // until section fully leaves
+      onUpdate: () => {
+        if (canvas.style.pointerEvents !== 'none') {
+          canvas.style.pointerEvents = 'none'
+        }
+      },
+      onEnter: () => { canvas.style.pointerEvents = 'none' },
+      onEnterBack: () => { canvas.style.pointerEvents = 'none' },
+    })
+
+    return () => guard.kill()
+  }, [])
 
   // ─── Staggered entrance + ambient drift ──────────────────────
   const driftTweens = useRef([])
@@ -82,14 +115,15 @@ export default function Horizon() {
     const masonryEl = masonryRef.current || section.querySelector('.horizon-masonry')
 
     // Staggered entrance — reveal by column for an architectural feel.
-    // CSS multi-column flows cards top-to-bottom across columns, so we
-    // compute column index from DOM position and stagger by column group.
-    const columnCount = parseInt(getComputedStyle(masonryEl).columnCount) || 3
-    cards.forEach((card, i) => {
-      const col = i % columnCount
-      const row = Math.floor(i / columnCount)
+    // Cards are in explicit column divs, so derive col/row from DOM.
+    const colEls = masonryEl.querySelectorAll('.horizon-column')
+    cards.forEach((card) => {
+      const colEl = card.closest('.horizon-column')
+      const col = Array.from(colEls).indexOf(colEl)
+      const row = Array.from(colEl.querySelectorAll('.horizon-card')).indexOf(card)
       const columnDelay = col * 0.2
       const intraDelay = row * 0.06
+      const i = col * 10 + row // unique index for drift variation
 
       gsap.set(card, { opacity: 0, y: 28 })
       ScrollTrigger.create({
@@ -135,43 +169,10 @@ export default function Horizon() {
     }
   }, [])
 
-  // ─── Mouse-reactive tilt — the surface moves as one object ──
-  useEffect(() => {
-    const masonry = masonryRef.current
-    if (!masonry || window.innerWidth <= 768) return
-
-    const onMouseMove = (e) => {
-      const rect = masonry.getBoundingClientRect()
-      // Normalized -1 to 1 relative to masonry center
-      const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2
-      const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2
-      gsap.to(masonry, {
-        rotateY: nx * 0.5,
-        rotateX: 2 - ny * 0.5,  // base 2deg + mouse offset
-        duration: 0.8,
-        ease: 'power2.out',
-        overwrite: true,
-      })
-    }
-
-    const onMouseLeave = () => {
-      gsap.to(masonry, {
-        rotateY: 0,
-        rotateX: 2,
-        duration: 1.2,
-        ease: 'power2.out',
-        overwrite: true,
-      })
-    }
-
-    masonry.addEventListener('mousemove', onMouseMove)
-    masonry.addEventListener('mouseleave', onMouseLeave)
-
-    return () => {
-      masonry.removeEventListener('mousemove', onMouseMove)
-      masonry.removeEventListener('mouseleave', onMouseLeave)
-    }
-  }, [])
+  // Note: removed mouse-reactive tilt on the whole masonry grid.
+  // The perspective transform (rotateX/rotateY) caused hit-test
+  // misalignment on cards far from the origin — bottom cards became
+  // unclickable. Individual card drift + hover lift is sufficient.
 
   // ─── Helper: derive personId from face name ─────────────────
   const getPersonId = useCallback((face) => {
@@ -285,31 +286,34 @@ export default function Horizon() {
     <section ref={sectionRef} className="scene scene--horizon">
       <div className="horizon-stage">
         <div ref={masonryRef} className="horizon-masonry">
-          {shuffledFaces.map((face, i) => (
-            <div
-              className="horizon-card"
-              key={i}
-              onClick={() => handleCardClick(face)}
-              onMouseEnter={handleCardEnter}
-              onMouseLeave={handleCardLeave}
-            >
-              {/* Glass frame with magnifying loupe */}
-              <HorizonLoupe src={`/horizon/${encodeURIComponent(face.file)}`}>
-                <div className="horizon-frame">
-                  <img
-                    src={`/horizon/${encodeURIComponent(face.file)}`}
-                    alt={face.name}
-                    loading="lazy"
-                  />
-                  <div className="horizon-vignette" />
-                </div>
-              </HorizonLoupe>
+          {columns.map((col, colIdx) => (
+            <div className="horizon-column" key={colIdx}>
+              {col.map(({ face, index }) => (
+                <div
+                  className="horizon-card"
+                  key={index}
+                  onClick={() => handleCardClick(face)}
+                  onMouseEnter={handleCardEnter}
+                  onMouseLeave={handleCardLeave}
+                >
+                  {/* Glass frame with magnifying loupe */}
+                  <HorizonLoupe src={`/horizon/${encodeURIComponent(face.file)}`}>
+                    <div className="horizon-frame">
+                      <img
+                        src={`/horizon/${encodeURIComponent(face.file)}`}
+                        alt={face.name}
+                      />
+                      <div className="horizon-vignette" />
+                    </div>
+                  </HorizonLoupe>
 
-              {/* Catalog label */}
-              <div className="horizon-label">
-                <span className="horizon-label__name">{face.name}</span>
-                <span className="horizon-label__meta">{face.catalog} &middot; {face.date}</span>
-              </div>
+                  {/* Catalog label */}
+                  <div className="horizon-label">
+                    <span className="horizon-label__name">{face.name}</span>
+                    <span className="horizon-label__meta">{face.catalog} &middot; {face.date}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           ))}
         </div>

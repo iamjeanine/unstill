@@ -121,18 +121,18 @@ button {
 
 .scene--horizon {
   position: relative;
+  z-index: 3;
   background: var(--color-void);
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 0 5vw 10vh;
-  overflow: clip;
 }
 
-/* Perspective wrapper — isolated so it doesn't break
-   position:fixed on the inscription overlay */
+/* Perspective wrapper — purely visual tilt via GSAP on mouse.
+   No CSS perspective/transform here to avoid hit-test misalignment
+   on cards far from the perspective origin. */
 .horizon-stage {
-  perspective: 1200px;
   width: 100%;
   display: flex;
   justify-content: center;
@@ -215,20 +215,26 @@ button {
 }
 
 /* ── Masonry layout ──
-   Multi-column does the heavy lifting. Items flow top-to-bottom
-   across 3 columns. break-inside:avoid keeps cards intact.
-   The column gap is the dark table between the plates. */
+   Flex columns instead of CSS multi-column — avoids browser
+   hit-test bugs where bottom-of-column items become unclickable.
+   Three explicit column divs, each a flex column. */
 .horizon-masonry {
-  column-count: 3;
-  column-fill: balance;
-  column-gap: 20px;
+  display: flex;
+  gap: 20px;
   max-width: 960px;
   width: 100%;
   margin-top: 8vh;
   position: relative;
   z-index: 5;
-  transform-style: preserve-3d;
-  transform: rotateX(2deg);
+  align-items: flex-start;
+  isolation: isolate;
+}
+
+.horizon-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 /* Hover isolation — the chosen face emerges, the rest recede */
@@ -241,13 +247,12 @@ button {
 }
 
 /* ── Card — glass plate on the table ──
-   break-inside:avoid prevents a card from splitting across columns.
-   Margin-bottom creates vertical spacing between cards in a column. */
+   Each card in the flex-column layout. GSAP handles layer promotion
+   during animation — no need for will-change (which creates permanent
+   compositor layers that can cause hit-test issues in some browsers). */
 .horizon-card {
-  break-inside: avoid;
-  margin-bottom: 20px;
+  position: relative;
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  will-change: transform;
 }
 
 .horizon-card:hover {
@@ -550,6 +555,8 @@ button {
    ═══════════════════════════════════════════════════════════ */
 
 .scene--closing {
+  position: relative;
+  z-index: 3;
   background: var(--color-void);
   display: flex;
   flex-direction: column;
@@ -689,10 +696,10 @@ button {
 @media (max-width: 1100px) {
   .horizon-masonry {
     max-width: 740px;
-    column-gap: 18px;
+    gap: 18px;
   }
-  .horizon-card {
-    margin-bottom: 18px;
+  .horizon-column {
+    gap: 18px;
   }
   .scale-num {
     font-size: clamp(48px, 6vw, 56px);
@@ -700,17 +707,16 @@ button {
 }
 
 @media (max-width: 768px) {
-  .horizon-stage {
-    perspective: none;
-  }
   .horizon-masonry {
-    column-count: 2;
     max-width: 500px;
-    column-gap: 14px;
-    transform: none;
+    gap: 14px;
   }
-  .horizon-card {
-    margin-bottom: 14px;
+  .horizon-column {
+    gap: 14px;
+  }
+  /* Hide third column on tablet */
+  .horizon-column:nth-child(3) {
+    display: none;
   }
   .threshold {
     height: 28vh;
@@ -769,8 +775,13 @@ button {
     height: 35vh;
   }
   .horizon-masonry {
-    column-count: 1;
     max-width: 340px;
+    flex-direction: column;
+    gap: 14px;
+  }
+  /* Show all columns stacked on mobile */
+  .horizon-column:nth-child(3) {
+    display: flex;
   }
   .horizon-card:hover {
     transform: none;
