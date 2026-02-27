@@ -11,7 +11,6 @@ import Closing from './scenes/Closing'
 import Cursor from './ui/Cursor'
 import LoadingScreen from './ui/LoadingScreen'
 import MuteButton from './ui/MuteButton'
-import ArchiveCounter from './ui/ArchiveCounter'
 import AudioManager from '../engine/AudioManager'
 import { INTERACTION_STATES } from '../data/sceneConfig'
 import { people } from '../data/people'
@@ -231,8 +230,6 @@ export default function App() {
           onNavigate={handleNavigateStory}
         />
       )}
-
-      <ArchiveCounter />
 
       <MuteButton
         isMuted={isMuted}

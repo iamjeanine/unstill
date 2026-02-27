@@ -532,24 +532,6 @@ button {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ARCHIVE COUNTER — "X of 2,500"
-   A quiet fact in the corner. Not a UI element.
-   ═══════════════════════════════════════════════════════════ */
-
-.archive-counter {
-  position: fixed;
-  bottom: 28px;
-  left: 28px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: rgba(232, 228, 214, 0.3);
-  z-index: 50;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* ═══════════════════════════════════════════════════════════
    CLOSING — The Final Frame.
    Words arrive, the room goes quiet, you sit with it.
    ═══════════════════════════════════════════════════════════ */
