@@ -143,17 +143,17 @@ export default function App() {
   useEffect(() => {
     if (audioManager.initialized) return
 
+    const events = ['click', 'scroll', 'touchstart', 'pointerdown', 'wheel']
     const initAudio = () => {
+      events.forEach((e) => window.removeEventListener(e, initAudio))
       audioManager.init()
       audioManager.startAmbient()
-      window.removeEventListener('click', initAudio)
-      window.removeEventListener('scroll', initAudio)
     }
-    window.addEventListener('click', initAudio, { once: true })
-    window.addEventListener('scroll', initAudio, { once: true })
+    events.forEach((e) =>
+      window.addEventListener(e, initAudio, { once: true, passive: true })
+    )
     return () => {
-      window.removeEventListener('click', initAudio)
-      window.removeEventListener('scroll', initAudio)
+      events.forEach((e) => window.removeEventListener(e, initAudio))
     }
   }, [])
 
