@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { archiveGroups } from '../../data/people'
@@ -10,6 +11,10 @@ export default function Archive() {
   const hintRef = useRef(null)
   const hintPhase = useRef(0) // 0 = show hover, 1 = hover done, 2 = show click, 3 = done
   const hoverTimerRef = useRef(null)
+
+  // Ref for the pair annotation rendered via portal (above the canvas layer)
+  const pairAnnotationRef = useRef(null)
+  const pairVisibleRef = useRef(false)
 
   useEffect(() => {
     const section = sectionRef.current
@@ -30,6 +35,51 @@ export default function Archive() {
         },
       })
     })
+
+    // ── Pair annotation (portal'd above canvas) ──
+    // Drive its vertical position from the section's bounding rect so it
+    // scrolls naturally — as if it were absolutely positioned at top: 15%
+    // inside the archive section — but rendered above the WebGL canvas.
+    const pairEl = pairAnnotationRef.current
+    if (pairEl) {
+      gsap.set(pairEl, { opacity: 0 })
+
+      const pairTrigger = ScrollTrigger.create({
+        trigger: section,
+        start: 'top bottom',
+        end: 'bottom top',
+        onUpdate: () => {
+          // Mirror the position of an element at top: 15% inside the section
+          const rect = section.getBoundingClientRect()
+          const y = rect.top + section.offsetHeight * 0.15
+          pairEl.style.top = `${y}px`
+
+          // Fade in/out when scrolling into and out of the viewport
+          const vh = window.innerHeight
+          const inView = y > -60 && y < vh - 40
+          if (inView && !pairVisibleRef.current) {
+            pairVisibleRef.current = true
+            gsap.to(pairEl, { opacity: 1, duration: 1.1, ease: 'power3.out' })
+          } else if (!inView && pairVisibleRef.current) {
+            pairVisibleRef.current = false
+            gsap.killTweensOf(pairEl)
+            gsap.to(pairEl, { opacity: 0, duration: 0.4, ease: 'power2.in' })
+          }
+        },
+        onLeave: () => {
+          pairVisibleRef.current = false
+          gsap.killTweensOf(pairEl)
+          gsap.set(pairEl, { opacity: 0 })
+        },
+        onLeaveBack: () => {
+          pairVisibleRef.current = false
+          gsap.killTweensOf(pairEl)
+          gsap.set(pairEl, { opacity: 0 })
+        },
+      })
+
+      pairEl._scrollTrigger = pairTrigger
+    }
 
     if (!hint) return
 
@@ -99,6 +149,7 @@ export default function Archive() {
       window.removeEventListener('unstill:hoverStart', onHoverStart)
       window.removeEventListener('unstill:hoverEnd', onHoverEnd)
       if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+      if (pairEl?._scrollTrigger) pairEl._scrollTrigger.kill()
       ScrollTrigger.getAll().forEach((t) => {
         if (t.trigger && section.contains(t.trigger)) t.kill()
       })
@@ -106,48 +157,105 @@ export default function Archive() {
   }, [])
 
   return (
-    <section ref={sectionRef} className="scene scene--archive">
-      {/* Persistent archive header — enters with first group */}
-      <p
-        className="archive-annotation"
-        style={{
-          position: 'absolute',
-          top: '6vh',
-          left: '8vw',
-          fontFamily: 'var(--font-display)',
-          fontStyle: 'italic',
-          fontSize: 'clamp(1rem, 2vw, 1.6rem)',
-          color: 'var(--color-text)',
-          opacity: 0,
-          maxWidth: '280px',
-          lineHeight: 1.5,
-        }}
-      >
-        Sydney Police Photographs
-        <br />
-        <span
-          style={{
-            fontFamily: 'var(--font-body)',
-            fontSize: '0.75em',
-            color: 'var(--color-text-muted)',
-            fontStyle: 'normal',
-          }}
-        >
-          1920s &mdash; Museums of History NSW
-        </span>
-      </p>
-
-      {/* Per-group scene-setting fragments */}
-      {archiveGroups.map((group, i) => (
-        <div
-          key={group.id}
+    <>
+      <section ref={sectionRef} className="scene scene--archive">
+        {/* Persistent archive header — enters with first group */}
+        <p
           className="archive-annotation"
           style={{
             position: 'absolute',
-            top: `${i * 25 + 15}%`,
+            top: '6vh',
+            left: '8vw',
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 'clamp(1rem, 2vw, 1.6rem)',
+            color: 'var(--color-text)',
+            opacity: 0,
+            maxWidth: '280px',
+            lineHeight: 1.5,
+          }}
+        >
+          Sydney Police Photographs
+          <br />
+          <span
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.75em',
+              color: 'var(--color-text-muted)',
+              fontStyle: 'normal',
+            }}
+          >
+            1920s &mdash; Museums of History NSW
+          </span>
+        </p>
+
+        {/* Per-group scene-setting fragments (skip first group — handled via portal) */}
+        {archiveGroups.map((group, i) => {
+          if (i === 0) return null
+          return (
+            <div
+              key={group.id}
+              className="archive-annotation"
+              style={{
+                position: 'absolute',
+                top: `${i * 25 + 15}%`,
+                right: '8vw',
+                textAlign: 'right',
+                opacity: 0,
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontWeight: 300,
+                  fontStyle: 'normal',
+                  fontSize: 'clamp(0.8rem, 1.1vw, 0.95rem)',
+                  color: 'var(--color-text-muted)',
+                  lineHeight: 1.6,
+                  maxWidth: '320px',
+                }}
+              >
+                {group.label}
+              </p>
+            </div>
+          )
+        })}
+
+        {/* Onboarding hint — single element, text swaps between phases */}
+        <p
+          ref={hintRef}
+          style={{
+            position: 'fixed',
+            bottom: '15vh',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            fontFamily: 'var(--font-body)',
+            fontSize: '0.75rem',
+            fontWeight: 300,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: 'rgba(0, 0, 0, 0.4)',
+            pointerEvents: 'none',
+            zIndex: 10,
+            opacity: 0,
+          }}
+        />
+      </section>
+
+      {/* First group annotation — rendered via portal to document.body
+          so it sits ABOVE the WebGL canvas (z-index 3 > canvas z-index 2).
+          Position is driven by scroll via getBoundingClientRect so it
+          moves naturally with the page, just like the other annotations. */}
+      {createPortal(
+        <div
+          ref={pairAnnotationRef}
+          style={{
+            position: 'fixed',
             right: '8vw',
             textAlign: 'right',
+            zIndex: 3,
             opacity: 0,
+            pointerEvents: 'none',
           }}
         >
           <p
@@ -158,33 +266,14 @@ export default function Archive() {
               fontSize: 'clamp(0.8rem, 1.1vw, 0.95rem)',
               color: 'var(--color-text-muted)',
               lineHeight: 1.6,
-              maxWidth: '320px',
             }}
           >
-            {group.label}
+            Raids on house parties<br />
+            in Darlinghurst.
           </p>
-        </div>
-      ))}
-
-      {/* Onboarding hint — single element, text swaps between phases */}
-      <p
-        ref={hintRef}
-        style={{
-          position: 'fixed',
-          bottom: '15vh',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          fontFamily: 'var(--font-body)',
-          fontSize: '0.75rem',
-          fontWeight: 300,
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          color: 'rgba(0, 0, 0, 0.4)',
-          pointerEvents: 'none',
-          zIndex: 10,
-          opacity: 0,
-        }}
-      />
-    </section>
+        </div>,
+        document.body
+      )}
+    </>
   )
 }

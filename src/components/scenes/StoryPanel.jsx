@@ -154,69 +154,6 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
     if (essayZone) essayZone.scrollTop = 0
   }, [person.id])
 
-  // ─── Auto-scroll experiment (Fay & Elsie) ───────────────────
-  useEffect(() => {
-    if (person.id !== 'fay-watson' && person.id !== 'elsie-paul') return
-
-    const essayZone = essayZoneRef.current
-    if (!essayZone) return
-
-    const SCROLL_SPEED = 22 // pixels per second — slow reader pace
-    const START_DELAY = 5 // seconds — let the viewer settle before scroll begins
-
-    let userTookControl = false
-    let scrollTween = null
-
-    const removeListeners = () => {
-      essayZone.removeEventListener('wheel', handleUserIntervention)
-      essayZone.removeEventListener('touchstart', handleUserIntervention)
-      essayZone.removeEventListener('pointerdown', handleUserIntervention)
-      essayZone.removeEventListener('keydown', handleUserIntervention)
-    }
-
-    const handleUserIntervention = () => {
-      userTookControl = true
-      if (scrollTween) {
-        scrollTween.kill()
-        scrollTween = null
-      }
-      removeListeners()
-    }
-
-    // Attach intervention listeners immediately — active during delay too
-    essayZone.addEventListener('wheel', handleUserIntervention, { passive: true })
-    essayZone.addEventListener('touchstart', handleUserIntervention, { passive: true })
-    essayZone.addEventListener('pointerdown', handleUserIntervention, { passive: true })
-    essayZone.addEventListener('keydown', handleUserIntervention, { passive: true })
-
-    // Measure after layout settles
-    const measureFrame = requestAnimationFrame(() => {
-      if (userTookControl) return
-
-      const scrollableDistance = essayZone.scrollHeight - essayZone.clientHeight
-      if (scrollableDistance <= 0) return
-
-      const duration = scrollableDistance / SCROLL_SPEED
-
-      scrollTween = gsap.to(essayZone, {
-        scrollTop: scrollableDistance,
-        duration,
-        ease: 'none',
-        delay: START_DELAY,
-      })
-    })
-
-    return () => {
-      userTookControl = true
-      if (scrollTween) {
-        scrollTween.kill()
-        scrollTween = null
-      }
-      cancelAnimationFrame(measureFrame)
-      removeListeners()
-    }
-  }, [person.id])
-
   // ─── Magnifying Glass Presence Effect (desktop cursor) ─────────
   useEffect(() => {
     const panel = panelRef.current
