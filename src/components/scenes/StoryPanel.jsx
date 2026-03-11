@@ -101,7 +101,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
       video.play().catch(() => {})
     }
 
-    // Loupe hint — fades in after panel settles, stays until first hover
+    // Loupe hint — fades in after panel settles, breathes, dismissed on first hover
     const hint = loupeHintRef.current
     if (hint) {
       gsap.set(hint, { opacity: 0 })
@@ -110,6 +110,15 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
         duration: 1.2,
         delay: 1.5,
         ease: 'power2.out',
+        onComplete: () => {
+          gsap.to(hint, {
+            opacity: 0.4,
+            duration: 2.2,
+            repeat: -1,
+            yoyo: true,
+            ease: 'sine.inOut',
+          })
+        },
       })
     }
 
@@ -117,6 +126,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
     const wrapper = videoWrapperRef.current
     const dismissHint = () => {
       if (hint) {
+        gsap.killTweensOf(hint)
         gsap.to(hint, { opacity: 0, duration: 1.0, ease: 'power2.in' })
       }
       wrapper?.removeEventListener('mouseenter', dismissHint)
@@ -375,7 +385,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
         }}
       />
 
-      {/* === Persistent Back Arrow (fixed top-left) === */}
+      {/* === Back to Archive (fixed top-left) === */}
       <button
         ref={backRef}
         onClick={handleClose}
@@ -386,26 +396,26 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
           zIndex: 60,
           display: 'flex',
           alignItems: 'center',
-          gap: '0.5rem',
+          gap: '0.6rem',
           background: 'none',
           border: 'none',
           cursor: 'pointer',
           padding: '0.5rem 0.5rem 0.5rem 0',
           fontFamily: 'var(--font-body)',
-          fontSize: '0.78rem',
+          fontSize: '0.85rem',
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          color: COLORS.backBtn,
+          color: 'rgba(255, 255, 255, 0.7)',
           transition: 'color 0.3s ease',
         }}
         onMouseEnter={(e) =>
           (e.currentTarget.style.color = COLORS.accent)
         }
         onMouseLeave={(e) =>
-          (e.currentTarget.style.color = COLORS.backBtn)
+          (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)')
         }
       >
-        <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>&larr;</span>
+        <span style={{ fontSize: '1.3rem', lineHeight: 1 }}>&larr;</span>
         <span>Archive</span>
       </button>
 

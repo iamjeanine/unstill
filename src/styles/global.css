@@ -661,8 +661,10 @@ button {
   font-weight: 300;
   color: var(--color-accent);
   margin-top: 16px;
-  text-decoration: none;
-  transition: opacity 0.3s ease;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: rgba(232, 112, 90, 0.4);
+  transition: opacity 0.3s ease, text-decoration-color 0.3s ease;
 }
 
 .invitation-email:hover {

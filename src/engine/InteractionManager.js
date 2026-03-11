@@ -397,7 +397,9 @@ class InteractionManager {
         this._prefetchMarginalia(plane.personData)
 
         this._setState(INTERACTION_STATES.HOVERING)
-        window.dispatchEvent(new CustomEvent('unstill:hoverStart'))
+        window.dispatchEvent(new CustomEvent('unstill:hoverStart', {
+          detail: { person: plane.personData },
+        }))
       }
     } else if (this.hoveredPlane) {
       // Mouse left all planes — fade loupe, restore z

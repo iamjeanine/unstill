@@ -250,7 +250,7 @@ export default function Entry({ audioManager }) {
       delay: 2.0,
     })
 
-    // ── Tagline: fade up ──
+    // ── Tagline: fade up + breathe ──
     gsap.set(tagline, { opacity: 0, y: 30 })
     gsap.to(tagline, {
       opacity: 1,
@@ -258,6 +258,15 @@ export default function Entry({ audioManager }) {
       duration: 1.0,
       delay: 1.8,
       ease: 'power2.out',
+      onComplete: () => {
+        gsap.to(tagline, {
+          opacity: 0.5,
+          duration: 2.8,
+          repeat: -1,
+          yoyo: true,
+          ease: 'sine.inOut',
+        })
+      },
     })
 
     // ── Scroll indicator: fade in + pulse ──
@@ -416,9 +425,9 @@ export default function Entry({ audioManager }) {
           fontFamily: 'var(--font-display)',
           fontSize: 'clamp(3rem, 10vw, 8rem)',
           fontWeight: 400,
-          letterSpacing: '0.15em',
+          letterSpacing: '0.08em',
           color: 'white',
-          textShadow: '0 1px 3px rgba(0,0,0,0.4), 0 0 20px rgba(0,0,0,0.2)',
+          textShadow: '0 2px 6px rgba(0,0,0,0.5), 0 0 30px rgba(0,0,0,0.3)',
           position: 'relative',
           zIndex: 3,
         }}
@@ -435,15 +444,15 @@ export default function Entry({ audioManager }) {
         style={{
           fontFamily: 'var(--font-display)',
           fontStyle: 'italic',
-          fontSize: 'clamp(0.9rem, 1.5vw, 1.2rem)',
+          fontSize: 'clamp(1.1rem, 2vw, 1.5rem)',
           fontWeight: 400,
-          color: 'rgba(255, 255, 255, 0.7)',
-          marginTop: '1.5rem',
+          color: 'rgba(255, 255, 255, 0.82)',
+          marginTop: '0.8rem',
           letterSpacing: '0.02em',
           textShadow: '0 1px 8px rgba(0,0,0,0.6)',
           position: 'relative',
           zIndex: 3,
-          maxWidth: '520px',
+          maxWidth: '680px',
         }}
       >
         What does it mean for an archive to become an experience?

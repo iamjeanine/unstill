@@ -18,7 +18,7 @@ const formatter = new Intl.NumberFormat('en-US')
 const scaleData = [
   { raw: 2500, text: 'Special Photographs in the collection.' },
   { raw: 130000, text: 'glass plate negatives in the archive.' },
-  { raw: 52000, text: 'searchable online. Right now.' },
+  { raw: 52000, text: 'Searchable online. Right now.' },
 ]
 
 export default function Scale() {

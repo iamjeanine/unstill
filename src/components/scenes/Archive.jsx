@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -11,6 +11,10 @@ export default function Archive() {
   const hintRef = useRef(null)
   const hintPhase = useRef(0) // 0 = show hover, 1 = hover done, 2 = show click, 3 = done
   const hoverTimerRef = useRef(null)
+
+  // Hover label state
+  const [hoveredPerson, setHoveredPerson] = useState(null)
+  const hoverLabelRef = useRef(null)
 
   // Ref for the pair annotation rendered via portal (above the canvas layer)
   const pairAnnotationRef = useRef(null)
@@ -112,33 +116,32 @@ export default function Archive() {
 
     // hoverStart = user hovered a mugshot (they've discovered the loupe)
     // Phase 0 → 1: dismiss hover hint, start 1s timer for click hint
-    const onHoverStart = () => {
+    const onHoverStart = (e) => {
+      // Show hover label with person name
+      const person = e.detail?.person
+      if (person) {
+        setHoveredPerson(person)
+        const label = hoverLabelRef.current
+        if (label) {
+          gsap.killTweensOf(label)
+          gsap.fromTo(label, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' })
+        }
+      }
+
       if (hintPhase.current === 0) {
         hintPhase.current = 1
         gsap.killTweensOf(hint)
         gsap.to(hint, { opacity: 0, duration: 0.4, ease: 'power2.in' })
-
-        // After 1s, show the click hint
-        hoverTimerRef.current = setTimeout(() => {
-          hintPhase.current = 2
-          hint.textContent = 'Click to enter their story'
-          gsap.fromTo(hint, { opacity: 0 }, { opacity: 1, duration: 0.8, ease: 'power2.out' })
-          // Auto-fade after 3 seconds
-          gsap.to(hint, {
-            opacity: 0, duration: 0.8, delay: 3.0, ease: 'power2.in',
-            onComplete: () => { hintPhase.current = 3 },
-          })
-        }, 1000)
       }
     }
 
     // hoverEnd = user left the mugshot — clear the 1s timer if still pending
     const onHoverEnd = () => {
-      if (hoverTimerRef.current && hintPhase.current === 1) {
-        clearTimeout(hoverTimerRef.current)
-        hoverTimerRef.current = null
-        // Return to phase 0 so the hover hint can re-show on next hover
-        hintPhase.current = 0
+      // Fade out hover label
+      const label = hoverLabelRef.current
+      if (label) {
+        gsap.killTweensOf(label)
+        gsap.to(label, { opacity: 0, duration: 0.3, ease: 'power2.in' })
       }
     }
 
@@ -271,6 +274,49 @@ export default function Archive() {
             Raids on house parties<br />
             in Darlinghurst.
           </p>
+        </div>,
+        document.body
+      )}
+
+      {/* Hover label — shows person name + "View story" when hovering a mugshot */}
+      {createPortal(
+        <div
+          ref={hoverLabelRef}
+          style={{
+            position: 'fixed',
+            bottom: '10vh',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            textAlign: 'center',
+            zIndex: 10,
+            opacity: 0,
+            pointerEvents: 'none',
+          }}
+        >
+          {hoveredPerson && (
+            <>
+              <p style={{
+                fontFamily: 'var(--font-display)',
+                fontStyle: 'italic',
+                fontSize: 'clamp(1rem, 1.8vw, 1.3rem)',
+                color: 'rgba(30, 30, 28, 0.7)',
+                marginBottom: '0.35rem',
+                lineHeight: 1.3,
+              }}>
+                {hoveredPerson.displayName}
+              </p>
+              <p style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '0.65rem',
+                fontWeight: 400,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'rgba(30, 30, 28, 0.35)',
+              }}>
+                Click to view story
+              </p>
+            </>
+          )}
         </div>,
         document.body
       )}

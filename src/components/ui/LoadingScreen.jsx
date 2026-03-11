@@ -63,6 +63,7 @@ export default function LoadingScreen({ isLoaded, onEnter }) {
   const loadedRef = useRef(false)
   const mouseRef = useRef({ x: -999, y: -999 })
   const smoothRef = useRef({ x: -999, y: -999 })
+  const hintRef = useRef(null)
   const imgRef = useRef(null)
   const rafRef = useRef(null)
   const timeRef = useRef(0)
@@ -251,17 +252,39 @@ export default function LoadingScreen({ isLoaded, onEnter }) {
     }
   }, [])
 
-  // Text entrance
+  // Text entrance + gentle breathing
   useEffect(() => {
     const text = textRef.current
+    const hint = hintRef.current
     if (!text) return
-    gsap.set(text, { opacity: 0 })
+    gsap.set(text, { opacity: 0, y: 12 })
     gsap.to(text, {
       opacity: 1,
-      duration: 2.0,
+      y: 0,
+      duration: 2.5,
       delay: 0.6,
       ease: 'power2.out',
+      onComplete: () => {
+        // Slow breathe — visible pulse so it feels alive
+        gsap.to(text, {
+          opacity: 0.45,
+          duration: 2.5,
+          repeat: -1,
+          yoyo: true,
+          ease: 'sine.inOut',
+        })
+      },
     })
+    // Hint fades in quietly after the main text has settled
+    if (hint) {
+      gsap.set(hint, { opacity: 0 })
+      gsap.to(hint, {
+        opacity: 1,
+        duration: 1.5,
+        delay: 3.5,
+        ease: 'power2.out',
+      })
+    }
   }, [])
 
   const handleEnter = useCallback(() => {
@@ -275,10 +298,20 @@ export default function LoadingScreen({ isLoaded, onEnter }) {
     const canvas = canvasRef.current
     const tl = gsap.timeline()
 
-    // Text and loupe fade first
+    // Kill all running animations on text and hint
+    const hint = hintRef.current
+    if (hint) {
+      gsap.killTweensOf(hint)
+      gsap.set(hint, { opacity: 0 })
+    }
+    if (text) {
+      gsap.killTweensOf(text)
+    }
+
+    // Text and loupe vanish quickly
     tl.to([text, canvas].filter(Boolean), {
       opacity: 0,
-      duration: 0.6,
+      duration: 0.3,
       ease: 'power2.in',
     }, 0)
 
@@ -320,31 +353,52 @@ export default function LoadingScreen({ isLoaded, onEnter }) {
           pointerEvents: 'none',
         }}
       />
-      <p
-        ref={textRef}
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontStyle: 'italic',
-          fontSize: 'clamp(1.1rem, 2.2vw, 1.6rem)',
-          fontWeight: 400,
-          color: 'rgba(232, 228, 214, 0.4)',
-          letterSpacing: '0.04em',
-          margin: 0,
-          opacity: 0,
-          userSelect: 'none',
-          position: 'relative',
-          zIndex: 1,
-          transition: 'color 0.5s ease',
-        }}
-        onMouseEnter={(e) =>
-          (e.currentTarget.style.color = 'rgba(232, 228, 214, 0.65)')
-        }
-        onMouseLeave={(e) =>
-          (e.currentTarget.style.color = 'rgba(232, 228, 214, 0.4)')
-        }
-      >
-        Look closer
-      </p>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '1.5rem',
+        position: 'relative',
+        zIndex: 1,
+      }}>
+        <p
+          ref={textRef}
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 'clamp(1.1rem, 2.2vw, 1.6rem)',
+            fontWeight: 400,
+            color: 'rgba(232, 228, 214, 0.5)',
+            letterSpacing: '0.04em',
+            margin: 0,
+            opacity: 0,
+            userSelect: 'none',
+            transition: 'color 0.5s ease',
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.color = 'rgba(232, 228, 214, 0.7)')
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.color = 'rgba(232, 228, 214, 0.5)')
+          }
+        >
+          Look closer
+        </p>
+        <span
+          ref={hintRef}
+          style={{
+            fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+            fontSize: '0.65rem',
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: 'rgba(232, 228, 214, 0.45)',
+            opacity: 0,
+            userSelect: 'none',
+          }}
+        >
+          Click anywhere to enter
+        </span>
+      </div>
     </div>
   )
 }
