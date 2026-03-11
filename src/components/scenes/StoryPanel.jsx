@@ -513,7 +513,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
               lineHeight: 1.5,
             }}
           >
-            {person.ages.join(' & ')} years old &mdash; {person.charge},{' '}
+            {person.ages.includes('Unknown') ? 'Age unknown' : `${person.ages.join(' & ')} years old`} &mdash; {person.charge},{' '}
             {person.date}
             {person.location && `, ${person.location}`}
           </p>
