@@ -1,0 +1,113 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+jobs:
+  lint-and-build:
+    name: Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  claude-review:
+    name: Claude Code Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed
+        run: |
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} -- '*.js' '*.jsx' '*.ts' '*.tsx' '*.css' '*.html' '*.glsl' | head -50 >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Get diff
+        id: diff
+        run: |
+          DIFF=$(git diff ${{ github.event.pull_request.base.sha }} ${{ github.sha }} -- '*.js' '*.jsx' '*.ts' '*.tsx' '*.css' '*.html' '*.glsl' | head -3000)
+          echo "diff<<EOF" >> $GITHUB_OUTPUT
+          echo "$DIFF" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Claude Code Review
+        uses: actions/github-script@v7
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        with:
+          script: |
+            const diff = `${{ steps.diff.outputs.diff }}`;
+            const files = `${{ steps.changed.outputs.files }}`;
+
+            if (!diff.trim()) {
+              console.log('No relevant file changes to review.');
+              return;
+            }
+
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': process.env.ANTHROPIC_API_KEY,
+                'anthropic-version': '2023-06-01'
+              },
+              body: JSON.stringify({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 2048,
+                messages: [{
+                  role: 'user',
+                  content: `You are reviewing a pull request for "Unstill", a React + Three.js + GSAP interactive web experience about historical Australian mugshots.
+
+            Changed files:
+            ${files}
+
+            Diff:
+            \`\`\`
+            ${diff}
+            \`\`\`
+
+            Provide a concise code review focusing on:
+            1. Bugs or logic errors
+            2. Security issues (XSS, injection, exposed secrets)
+            3. Performance concerns (especially Three.js/WebGL/GSAP)
+            4. React best practices (hooks, re-renders, cleanup)
+            5. Accessibility issues
+
+            Format as a brief summary followed by specific findings. If the code looks good, say so. Keep it actionable.`
+                }]
+              })
+            });
+
+            const data = await response.json();
+            const review = data.content?.[0]?.text || 'Claude review failed — check API key and quota.';
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## Claude Code Review\n\n${review}\n\n---\n*Automated review by Claude*`
+            });
