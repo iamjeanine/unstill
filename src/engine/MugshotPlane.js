@@ -430,12 +430,12 @@ class MugshotPlane {
     })
   }
 
-  fadeIn(delay = 0) {
+  fadeIn(delay = 0, overrideX = null) {
     // Kill any running opacity tween to prevent race conditions
     gsap.killTweensOf(this.material.uniforms.uOpacity)
     this.mesh.visible = true
-    // Reset position immediately so planes always start from their layout spot
-    this.mesh.position.x = this.basePosition.x
+    // Reset position — use override if provided (carousel centering)
+    this.mesh.position.x = overrideX !== null ? overrideX : this.basePosition.x
     this.mesh.position.y = this.basePosition.y
     this.velocity.x = 0
     this.velocity.y = 0
@@ -445,6 +445,21 @@ class MugshotPlane {
       delay,
       ease: 'power2.out',
     })
+  }
+
+  /**
+   * Center this plane at x=0 for mobile carousel display.
+   */
+  centerForCarousel(animate = true) {
+    if (animate) {
+      gsap.to(this.mesh.position, {
+        x: 0,
+        duration: 0.4,
+        ease: 'power2.inOut',
+      })
+    } else {
+      this.mesh.position.x = 0
+    }
   }
 
   fadeOut(duration = 0.6) {

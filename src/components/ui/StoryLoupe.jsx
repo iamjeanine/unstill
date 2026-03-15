@@ -94,6 +94,7 @@ function fbm(x, y, time) {
 // ─── Component ───────────────────────────────────────────────────────
 
 const LOUPE_RADIUS = 75        // px radius of loupe circle (CSS pixels)
+const LOUPE_RADIUS_TOUCH = 90  // larger radius for finger occlusion
 const NOISE_SCALE = 1.6        // FBM frequency (lower = smoother blobs)
 const NOISE_STRENGTH = 0.05    // how much noise distorts the edge (subtle)
 const NOISE_RING_SCALE = 0.35  // how far around the ring noise samples spread
@@ -110,6 +111,8 @@ export default function StoryLoupe({ videoRef, stillSrc, children }) {
   const isHoveringRef = useRef(false)
   const revealRef = useRef(0) // 0 = hidden, 1 = fully visible
   const timeRef = useRef(0)
+  const isTouchActiveRef = useRef(false) // currently using touch loupe
+  const touchTimerRef = useRef(null)
 
   // Load the still image and create a B&W version
   useEffect(() => {
@@ -162,7 +165,8 @@ export default function StoryLoupe({ videoRef, stillSrc, children }) {
     // If cursor is way off screen, skip
     if (mx < -200 || my < -200) return
 
-    const radius = LOUPE_RADIUS * reveal
+    const baseRadius = isTouchActiveRef.current ? LOUPE_RADIUS_TOUCH : LOUPE_RADIUS
+    const radius = baseRadius * reveal
     const time = timeRef.current
 
     // ── Organic loupe clip path ─────────────────────────────
@@ -295,25 +299,79 @@ export default function StoryLoupe({ videoRef, stillSrc, children }) {
       draw()
     }
 
+    // Touch handlers — press-and-hold to reveal loupe
+    const onTouchStart = (e) => {
+      if (e.touches.length !== 1) return
+      const touch = e.touches[0]
+      const rect = container.getBoundingClientRect()
+      const tx = touch.clientX - rect.left
+      const ty = touch.clientY - rect.top
+
+      // Set smooth position immediately so loupe appears at finger, not at -999
+      smoothPosRef.current.x = tx
+      smoothPosRef.current.y = ty
+      mousePosRef.current.x = tx
+      mousePosRef.current.y = ty
+
+      clearTimeout(touchTimerRef.current)
+      touchTimerRef.current = setTimeout(() => {
+        isTouchActiveRef.current = true
+        isHoveringRef.current = true
+      }, 400)
+    }
+
+    const onTouchMove = (e) => {
+      if (!isTouchActiveRef.current) {
+        // Check if finger moved too much before timer fired
+        if (e.touches.length === 1) {
+          const touch = e.touches[0]
+          const rect = container.getBoundingClientRect()
+          const dx = touch.clientX - rect.left - mousePosRef.current.x
+          const dy = touch.clientY - rect.top - mousePosRef.current.y
+          if (Math.sqrt(dx * dx + dy * dy) > 10) {
+            clearTimeout(touchTimerRef.current)
+          }
+        }
+        return
+      }
+      e.preventDefault()
+      const touch = e.touches[0]
+      const rect = container.getBoundingClientRect()
+      mousePosRef.current.x = touch.clientX - rect.left
+      mousePosRef.current.y = touch.clientY - rect.top
+    }
+
+    const onTouchEnd = () => {
+      clearTimeout(touchTimerRef.current)
+      isTouchActiveRef.current = false
+      isHoveringRef.current = false
+    }
+
     container.addEventListener('mousemove', onMouseMove)
     container.addEventListener('mouseleave', onMouseLeave)
+    container.addEventListener('touchstart', onTouchStart, { passive: false })
+    container.addEventListener('touchmove', onTouchMove, { passive: false })
+    container.addEventListener('touchend', onTouchEnd)
     gsap.ticker.add(onTick)
 
     return () => {
       container.removeEventListener('mousemove', onMouseMove)
       container.removeEventListener('mouseleave', onMouseLeave)
+      container.removeEventListener('touchstart', onTouchStart)
+      container.removeEventListener('touchmove', onTouchMove)
+      container.removeEventListener('touchend', onTouchEnd)
+      clearTimeout(touchTimerRef.current)
       ro.disconnect()
       gsap.ticker.remove(onTick)
     }
   }, [draw, stillSrc])
 
-  // If no still image or touch device, just render children
-  const isTouch = typeof window !== 'undefined' &&
-    ('ontouchstart' in window || navigator.maxTouchPoints > 0)
-
-  if (!stillSrc || isTouch) {
+  if (!stillSrc) {
     return <>{children}</>
   }
+
+  const isTouch = typeof window !== 'undefined' &&
+    ('ontouchstart' in window || navigator.maxTouchPoints > 0)
 
   return (
     <div
@@ -321,7 +379,7 @@ export default function StoryLoupe({ videoRef, stillSrc, children }) {
       style={{
         position: 'relative',
         display: 'inline-block',
-        cursor: 'none',
+        cursor: isTouch ? 'auto' : 'none',
       }}
     >
       {/* Video (or fallback image) as base layer */}

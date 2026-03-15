@@ -47,6 +47,11 @@ class InteractionManager {
     this._touchLoupeActive = false
     this._touchStartPos = { x: 0, y: 0 }
     this._touchPlane = null
+
+    // Carousel swipe detection (set externally by Canvas.jsx)
+    this.carouselRef = null
+    this.navigateCarousel = null
+    this._swipeDetected = false
   }
 
   enable() {
@@ -225,6 +230,7 @@ class InteractionManager {
     this._touchStartPos.x = touch.clientX
     this._touchStartPos.y = touch.clientY
     this.dragMoved = false
+    this._swipeDetected = false
 
     // Check if touching a plane
     const hit = this.physicsManager.getPlaneAtScreenPos(touch.clientX, touch.clientY)
@@ -234,8 +240,23 @@ class InteractionManager {
     }
 
     this._touchPlane = hit.plane
+    this._touchStartUV = hit.uv || null
 
-    // Set up drag offset (same as mousedown)
+    // In carousel mode: skip drag setup, only allow loupe + swipe + tap
+    const carousel = this.carouselRef?.current
+    if (carousel?.isMobile) {
+      clearTimeout(this._touchLoupeTimer)
+      this._touchLoupeTimer = setTimeout(() => {
+        if (!this._touchPlane || this.dragMoved || this._swipeDetected) return
+        this._touchLoupeActive = true
+        this._touchPlane.animateReveal(1.0, 1.5)
+        this._touchPlane.animateHover(1)
+        if (this._touchStartUV) this._touchPlane.update(null, this._touchStartUV)
+      }, 400)
+      return
+    }
+
+    // Desktop / non-carousel: set up drag offset
     this.dragPlane = hit.plane
     const worldPos = this.physicsManager.screenToWorld(touch.clientX, touch.clientY)
     this.dragOffset.x = this.dragPlane.mesh.position.x - worldPos.x
@@ -249,9 +270,6 @@ class InteractionManager {
     this.dragPlane.velocity.x = 0
     this.dragPlane.velocity.y = 0
 
-    // Store the initial UV hit for loupe positioning
-    this._touchStartUV = hit.uv || null
-
     // Start press-and-hold timer — after 400ms, activate loupe
     clearTimeout(this._touchLoupeTimer)
     this._touchLoupeTimer = setTimeout(() => {
@@ -259,31 +277,52 @@ class InteractionManager {
       this._touchLoupeActive = true
       this._touchPlane.animateReveal(1.0, 1.5)
       this._touchPlane.animateHover(1)
-      // Position loupe at initial touch point
       if (this._touchStartUV) this._touchPlane.update(null, this._touchStartUV)
     }, 400)
   }
 
   _onTouchMove(event) {
-    if (!this._touchPlane || event.touches.length !== 1) return
+    if (event.touches.length !== 1) return
     const touch = event.touches[0]
 
     const dx = touch.clientX - this._touchStartPos.x
     const dy = touch.clientY - this._touchStartPos.y
+    const absDx = Math.abs(dx)
+    const absDy = Math.abs(dy)
     const dist = Math.sqrt(dx * dx + dy * dy)
 
     if (this._touchLoupeActive) {
       // Loupe mode — move the reveal circle with the finger
       event.preventDefault()
-      const uv = this.physicsManager.getUVAtScreenPos(this._touchPlane, touch.clientX, touch.clientY)
-      if (uv) this._touchPlane.update(null, uv)
+      if (this._touchPlane) {
+        const uv = this.physicsManager.getUVAtScreenPos(this._touchPlane, touch.clientX, touch.clientY)
+        if (uv) this._touchPlane.update(null, uv)
+      }
       return
     }
 
-    // Not in loupe mode yet — check for drag
+    // Carousel mode: detect horizontal swipe
+    const carousel = this.carouselRef?.current
+    if (carousel?.isMobile && dist > DRAG_THRESHOLD) {
+      clearTimeout(this._touchLoupeTimer)
+
+      if (!this._swipeDetected && absDx > 50 && absDx > absDy * 1.5) {
+        this._swipeDetected = true
+        event.preventDefault()
+        const direction = dx < 0 ? 1 : -1 // swipe left = next
+        if (this.navigateCarousel) {
+          this.navigateCarousel(direction)
+        }
+      }
+      return
+    }
+
+    // Non-carousel: standard drag detection
+    if (!this._touchPlane) return
+
     if (dist > DRAG_THRESHOLD) {
       this.dragMoved = true
-      clearTimeout(this._touchLoupeTimer) // Cancel loupe activation
+      clearTimeout(this._touchLoupeTimer)
     }
 
     if (this.dragMoved && this.dragPlane && this.physicsManager) {
@@ -312,6 +351,14 @@ class InteractionManager {
       // Was using loupe — just dismiss it, don't enter story
       this._endTouchLoupe()
       this._endDrag()
+      return
+    }
+
+    // Carousel swipe was handled in touchMove — just clean up
+    if (this._swipeDetected) {
+      this._swipeDetected = false
+      this._endDrag()
+      this._touchPlane = null
       return
     }
 

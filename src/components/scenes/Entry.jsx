@@ -453,6 +453,8 @@ export default function Entry({ audioManager }) {
           position: 'relative',
           zIndex: 3,
           maxWidth: '680px',
+          padding: '0 5vw',
+          textAlign: 'center',
         }}
       >
         What does it mean for an archive to become an experience?

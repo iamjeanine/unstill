@@ -7,13 +7,23 @@ import InteractionManager from '../engine/InteractionManager'
 import PhysicsManager from '../engine/PhysicsManager'
 import { people, archiveGroups } from '../data/people'
 
-export default function Canvas({ onStateChange, onLoad, audioManager }) {
+function isMobilePortrait() {
+  return window.innerWidth <= 480
+}
+
+export default function Canvas({ onStateChange, onLoad, audioManager, onCarouselChange }) {
   const containerRef = useRef(null)
   const engineRef = useRef(null)
   const loopRef = useRef(null)
   const planesRef = useRef([])
   const interactionRef = useRef(null)
   const physicsRef = useRef(null)
+  const carouselRef = useRef({
+    isMobile: false,
+    activeGroupIndex: -1,
+    personIndex: 0,
+    groupMemberCount: 0,
+  })
 
   const lenis = useLenis()
 
@@ -59,6 +69,14 @@ export default function Canvas({ onStateChange, onLoad, audioManager }) {
     })
     interaction.physicsManager = physics
     interactionRef.current = interaction
+
+    // Expose planes for demo/calibrate mode
+    const params = new URLSearchParams(window.location.search)
+    if (params.has('demo') || params.has('calibrate')) {
+      window.__unstillPlanes = planes
+      window.__unstillPhysics = physics
+      window.__unstillInteraction = interaction
+    }
 
     // Signal loaded
     if (onLoad) {
@@ -141,9 +159,70 @@ export default function Canvas({ onStateChange, onLoad, audioManager }) {
 
     // Track which group is currently showing (-1 = none)
     let activeGroupIndex = -1
+    const carousel = carouselRef.current
+
+    // ── Carousel navigation (called by InteractionManager on swipe) ──
+    const navigateCarousel = (direction) => {
+      if (!carousel.isMobile) return
+
+      const groupPlanes = groupPlaneMap[carousel.activeGroupIndex]
+      if (!groupPlanes) return
+
+      const oldIndex = carousel.personIndex
+      const newIdx = oldIndex + direction
+      if (newIdx < 0 || newIdx >= groupPlanes.length) return
+
+      const oldPlane = groupPlanes[oldIndex]
+      const newPlane = groupPlanes[newIdx]
+
+      // Old plane slides out opposite to swipe direction
+      gsap.to(oldPlane.mesh.position, {
+        x: -direction * 0.5,
+        duration: 0.35,
+        ease: 'power2.in',
+      })
+      gsap.to(oldPlane.material.uniforms.uOpacity, {
+        value: 0,
+        duration: 0.3,
+        ease: 'power2.in',
+        onComplete: () => { oldPlane.mesh.visible = false },
+      })
+
+      // New plane slides in from swipe direction
+      newPlane.mesh.visible = true
+      newPlane.mesh.position.x = direction * 0.5
+      newPlane.mesh.position.y = newPlane.basePosition.y
+      gsap.to(newPlane.mesh.position, {
+        x: 0,
+        duration: 0.4,
+        ease: 'power2.out',
+      })
+      gsap.to(newPlane.material.uniforms.uOpacity, {
+        value: 1,
+        duration: 0.4,
+        ease: 'power2.out',
+      })
+
+      carousel.personIndex = newIdx
+
+      if (onCarouselChange) {
+        onCarouselChange({
+          active: true,
+          index: newIdx,
+          count: groupPlanes.length,
+          groupIndex: carousel.activeGroupIndex,
+        })
+      }
+    }
+
+    // Wire carousel into InteractionManager
+    interaction.carouselRef = carouselRef
+    interaction.navigateCarousel = navigateCarousel
 
     const transitionTo = (newIndex) => {
       if (newIndex === activeGroupIndex) return
+
+      const mobile = isMobilePortrait()
 
       // Hide the current group
       if (activeGroupIndex >= 0) {
@@ -152,16 +231,75 @@ export default function Canvas({ onStateChange, onLoad, audioManager }) {
 
       // Show the new group
       if (newIndex >= 0) {
-        groupPlaneMap[newIndex].forEach((p, i) => p.fadeIn(0.15 + i * 0.12))
+        const groupPlanes = groupPlaneMap[newIndex]
+
+        if (mobile && groupPlanes.length > 1) {
+          // CAROUSEL MODE: show only first person, centered
+          carousel.isMobile = true
+          carousel.activeGroupIndex = newIndex
+          carousel.personIndex = 0
+          carousel.groupMemberCount = groupPlanes.length
+
+          groupPlanes.forEach((p, i) => {
+            if (i === 0) {
+              p.fadeIn(0.15, 0) // overrideX = 0 (centered)
+            } else {
+              p.mesh.visible = false
+              p.material.uniforms.uOpacity.value = 0
+            }
+          })
+
+          if (onCarouselChange) {
+            onCarouselChange({
+              active: true,
+              index: 0,
+              count: groupPlanes.length,
+              groupIndex: newIndex,
+            })
+          }
+        } else {
+          // Normal layout (desktop or solo groups)
+          carousel.isMobile = false
+          groupPlanes.forEach((p, i) => p.fadeIn(0.15 + i * 0.12))
+
+          if (onCarouselChange) {
+            onCarouselChange({ active: false })
+          }
+        }
+
         interaction.enable()
         engine.canvas.style.pointerEvents = 'auto'
       } else {
         interaction.disable()
         engine.canvas.style.pointerEvents = 'none'
+        carousel.isMobile = false
+
+        if (onCarouselChange) {
+          onCarouselChange({ active: false })
+        }
       }
 
       activeGroupIndex = newIndex
+      carousel.activeGroupIndex = newIndex
     }
+
+    // Handle resize — re-evaluate carousel mode
+    const handleResize = () => {
+      const mobile = isMobilePortrait()
+      if (carousel.isMobile && !mobile) {
+        const idx = activeGroupIndex
+        activeGroupIndex = -1
+        transitionTo(idx)
+      } else if (!carousel.isMobile && mobile && activeGroupIndex >= 0) {
+        const groupPlanes = groupPlaneMap[activeGroupIndex]
+        if (groupPlanes && groupPlanes.length > 1) {
+          const idx = activeGroupIndex
+          activeGroupIndex = -1
+          transitionTo(idx)
+        }
+      }
+    }
+    window.addEventListener('resize', handleResize)
 
     // Single ScrollTrigger spanning the entire archive section.
     // start/end at center of viewport → total range = exactly 400vh
@@ -183,8 +321,9 @@ export default function Canvas({ onStateChange, onLoad, audioManager }) {
 
     return () => {
       trigger.kill()
+      window.removeEventListener('resize', handleResize)
     }
-  }, [audioManager])
+  }, [audioManager, onCarouselChange])
 
   // Listen for exitStory events from StoryPanel
   useEffect(() => {

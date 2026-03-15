@@ -94,7 +94,8 @@ export default function Archive() {
     // Phase 3: done — no more hints
 
     gsap.set(hint, { opacity: 0 })
-    hint.textContent = 'Hover to look closer'
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    hint.textContent = isTouch ? 'Tap to look closer' : 'Hover to look closer'
 
     ScrollTrigger.create({
       trigger: section,
@@ -168,10 +169,10 @@ export default function Archive() {
           style={{
             position: 'absolute',
             top: '6vh',
-            left: '8vw',
+            left: 'max(5vw, 16px)',
             fontFamily: 'var(--font-display)',
             fontStyle: 'italic',
-            fontSize: 'clamp(1rem, 2vw, 1.6rem)',
+            fontSize: 'clamp(0.85rem, 2vw, 1.6rem)',
             color: 'var(--color-text)',
             opacity: 0,
             maxWidth: '280px',
@@ -202,7 +203,7 @@ export default function Archive() {
               style={{
                 position: 'absolute',
                 top: `${i * 25 + 15}%`,
-                right: '8vw',
+                right: 'max(5vw, 16px)',
                 textAlign: 'right',
                 opacity: 0,
               }}
@@ -254,7 +255,7 @@ export default function Archive() {
           ref={pairAnnotationRef}
           style={{
             position: 'fixed',
-            right: '8vw',
+            right: 'max(5vw, 16px)',
             textAlign: 'right',
             zIndex: 3,
             opacity: 0,

@@ -122,7 +122,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
       })
     }
 
-    // Dismiss hint on first mouse enter over the video wrapper
+    // Dismiss hint on first mouse enter or touch over the video wrapper
     const wrapper = videoWrapperRef.current
     const dismissHint = () => {
       if (hint) {
@@ -130,12 +130,15 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
         gsap.to(hint, { opacity: 0, duration: 1.0, ease: 'power2.in' })
       }
       wrapper?.removeEventListener('mouseenter', dismissHint)
+      wrapper?.removeEventListener('touchstart', dismissHint)
     }
     wrapper?.addEventListener('mouseenter', dismissHint)
+    wrapper?.addEventListener('touchstart', dismissHint)
 
     return () => {
       gsap.killTweensOf([panel, video, back, hint].filter(Boolean))
       wrapper?.removeEventListener('mouseenter', dismissHint)
+      wrapper?.removeEventListener('touchstart', dismissHint)
       if (video) {
         video.pause()
         video.currentTime = 0
@@ -389,6 +392,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
       <button
         ref={backRef}
         onClick={handleClose}
+        className="story-back-btn"
         style={{
           position: 'fixed',
           top: '2rem',
@@ -424,6 +428,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
           ═══════════════════════════════════════════════════ */}
       <div
         ref={videoZoneRef}
+        className="story-video-zone"
         style={{
           flex: '0 0 auto',
           display: 'flex',
@@ -453,11 +458,11 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                 <video
                   ref={videoRef}
                   src={person.animation}
+                  className="story-media"
                   loop
                   muted
                   playsInline
                   style={{
-                    width: 'min(50vw, 720px)',
                     height: 'auto',
                     display: 'block',
                   }}
@@ -468,8 +473,8 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                 <img
                   src={person.images.color}
                   alt={person.displayName}
+                  className="story-media"
                   style={{
-                    width: 'min(50vw, 720px)',
                     height: 'auto',
                     display: 'block',
                     boxShadow: COLORS.videoGlow,
@@ -484,6 +489,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
 
         {/* Meta block — museum label beneath the artwork */}
         <div
+          className="story-meta-block"
           style={{
             textAlign: 'center',
             marginTop: '1rem',
@@ -518,8 +524,8 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
             {person.location && `, ${person.location}`}
           </p>
 
-          {/* Loupe hint — desktop only, fades in then out */}
-          {person.animation && !('ontouchstart' in window) && (
+          {/* Loupe hint — fades in then out */}
+          {person.animation && (
             <p
               ref={loupeHintRef}
               style={{
@@ -534,7 +540,9 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                 pointerEvents: 'none',
               }}
             >
-              Hover to see what survived.
+              {'ontouchstart' in window || navigator.maxTouchPoints > 0
+                ? 'Press to reveal the original.'
+                : 'Hover to see what survived.'}
             </p>
           )}
         </div>
@@ -555,6 +563,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
       >
         {/* Inner column — centered, editorial width */}
         <div
+          className="story-essay-inner"
           style={{
             maxWidth: '520px',
             margin: '0 auto',
