@@ -205,13 +205,14 @@ button {
 
 .hartman-quote__cite {
   display: block;
-  margin-top: 40px;
+  margin-top: 48px;
   font-family: var(--font-body);
   font-style: normal;
-  font-size: clamp(0.9rem, 1.2vw, 1.1rem);
-  font-weight: 300;
-  color: rgba(232, 228, 214, 0.6);
-  letter-spacing: 0.06em;
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  font-weight: 400;
+  color: rgba(232, 228, 214, 0.45);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
 }
 
 /* ── Masonry layout ──
@@ -478,12 +479,13 @@ button {
 }
 
 .horizon-panel__inscription {
-  font-family: var(--font-body);
-  font-size: 14px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 15px;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.7);
-  line-height: 1.7;
-  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.8;
+  letter-spacing: 0.01em;
   opacity: 0;
   animation: chemical-develop-dark 1.8s cubic-bezier(0.22, 0.1, 0.28, 1) forwards;
 }
@@ -626,7 +628,7 @@ button {
 
 /* Invitation block — earned, not announced */
 .invitation-block {
-  margin-top: 120px;
+  margin-top: 160px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -642,34 +644,37 @@ button {
 }
 
 .invitation-divider {
-  width: 28px;
+  width: 40px;
   height: 1px;
-  background: rgba(232, 228, 214, 0.2);
+  background: rgba(232, 228, 214, 0.18);
   margin: 0 auto;
 }
 
 .invitation-name {
-  font-family: var(--font-display);
-  font-size: clamp(20px, 2vw, 24px);
-  color: rgba(232, 228, 214, 0.88);
+  font-family: var(--font-body);
+  font-size: clamp(11px, 1.1vw, 13px);
+  font-weight: 400;
+  color: rgba(232, 228, 214, 0.7);
   margin-top: 48px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
 }
 
 .invitation-email {
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 300;
-  color: var(--color-accent);
-  margin-top: 16px;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  text-decoration-color: rgba(232, 112, 90, 0.4);
-  transition: opacity 0.3s ease, text-decoration-color 0.3s ease;
+  color: rgba(232, 228, 214, 0.4);
+  margin-top: 28px;
+  text-decoration: none;
+  letter-spacing: 0.08em;
+  transition: color 0.3s ease;
 }
 
 .invitation-email:hover {
-  opacity: 0.75;
+  color: rgba(232, 228, 214, 0.65);
 }
+
 
 
 
@@ -781,7 +786,7 @@ button {
     font-size: 17px;
   }
   .horizon-panel__inscription {
-    font-size: 13px;
+    font-size: 14px;
   }
   .hartman-quote__text {
     font-size: clamp(1.5rem, 5.5vw, 2.2rem);
@@ -864,12 +869,12 @@ button {
   animation: chemical-develop 1.8s cubic-bezier(0.22, 0.1, 0.28, 1) forwards;
 }
 
-/* First line — slight hierarchy bump */
+/* First line — same weight as others */
 .inscription-line.first-line {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 400;
   letter-spacing: 0.02em;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   animation-duration: 2s;
 }
 

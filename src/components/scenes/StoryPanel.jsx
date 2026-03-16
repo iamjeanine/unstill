@@ -35,9 +35,9 @@ const COLORS = {
   backBtn: 'rgba(255, 255, 255, 0.55)',
   videoGlow: '0 0 80px rgba(232, 112, 90, 0.04)',
   inscriptionColors: [
-    'rgba(255, 255, 255, 0.8)',
     'rgba(255, 255, 255, 0.7)',
-    'rgba(255, 255, 255, 0.6)',
+    'rgba(255, 255, 255, 0.7)',
+    'rgba(255, 255, 255, 0.7)',
   ],
   borderSubtle: 'rgba(232, 228, 214, 0.12)',
   connectionBg: 'rgba(255, 255, 255, 0.04)',
@@ -424,13 +424,15 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
       </button>
 
       {/* ═══════════════════════════════════════════════════
-          VIDEO ZONE — pinned at top, never scrolls
+          SINGLE SCROLL FLOW — video, essay, inscriptions
           ═══════════════════════════════════════════════════ */}
       <div
         ref={videoZoneRef}
         className="story-video-zone"
         style={{
-          flex: '0 0 auto',
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -482,8 +484,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                 />
               )
             )}
-            {/* Inscriptions — right margin beside video */}
-            {inscriptionsJSX}
+            {/* Inscriptions moved to after essay */}
           </div>
         </div>
 
@@ -492,7 +493,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
           className="story-meta-block"
           style={{
             textAlign: 'center',
-            marginTop: '1rem',
+            marginTop: '1.2rem',
             marginBottom: '0.4rem',
           }}
         >
@@ -503,7 +504,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
               fontSize: '24px',
               fontWeight: 400,
               color: COLORS.textBright,
-              marginBottom: '0.3rem',
+              marginBottom: '0.6rem',
               lineHeight: 1.3,
             }}
           >
@@ -514,28 +515,41 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
               fontFamily: 'var(--font-body)',
               fontSize: '13px',
               fontWeight: 300,
-              color: COLORS.textMuted,
-              letterSpacing: '0.04em',
+              color: COLORS.text,
+              letterSpacing: '0.02em',
               lineHeight: 1.5,
             }}
           >
-            {person.ages.includes('Unknown') ? 'Age unknown' : `${person.ages.join(' & ')} years old`} &mdash; {person.charge},{' '}
-            {person.date}
+            {person.charge}
+          </p>
+          <p
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '11px',
+              fontWeight: 300,
+              color: COLORS.textMuted,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              lineHeight: 1.5,
+              marginTop: '0.35rem',
+            }}
+          >
+            {person.ages.includes('Unknown') ? 'Age unknown' : `${person.ages.join(' & ')} years old`} &mdash; {person.date}
             {person.location && `, ${person.location}`}
           </p>
 
-          {/* Loupe hint — fades in then out */}
+          {/* Loupe hint — editorial caption tone */}
           {person.animation && (
             <p
               ref={loupeHintRef}
               style={{
                 fontFamily: 'var(--font-display)',
                 fontStyle: 'italic',
-                fontSize: '16px',
+                fontSize: '15px',
                 fontWeight: 400,
                 color: 'rgba(232, 228, 214, 0.8)',
                 letterSpacing: '0.01em',
-                marginTop: '0.8rem',
+                marginTop: '1.2rem',
                 opacity: 0,
                 pointerEvents: 'none',
               }}
@@ -546,183 +560,242 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
             </p>
           )}
         </div>
-      </div>
 
-      {/* ═══════════════════════════════════════════════════
-          ESSAY ZONE — scrollable, with focus gradient mask
-          ═══════════════════════════════════════════════════ */}
-      <div
-        ref={essayZoneRef}
-        className="story-essay-zone"
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          position: 'relative',
-        }}
-      >
-        {/* Inner column — centered, editorial width */}
+        {/* Editorial spread — essay column with margin notes */}
         <div
-          className="story-essay-inner"
+          ref={essayZoneRef}
+          className="story-editorial-spread"
           style={{
-            maxWidth: '520px',
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '3rem',
+            maxWidth: '820px',
             margin: '0 auto',
             padding: '2.5rem 2rem 0',
             position: 'relative',
           }}
         >
-          {/* Essay paragraphs */}
-          <div style={{ marginBottom: '2.5rem' }}>
-            {paragraphs.map((para, i) => {
-              const isLast = i === paragraphs.length - 1
-              return (
-              <p
-                key={`${person.id}-p-${i}`}
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '17px',
-                  fontWeight: 400,
-                  lineHeight: isLast ? 2.05 : 1.85,
-                  color: COLORS.text,
-                  marginBottom: '2rem',
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: para.replace(
-                    /\*([^*]+)\*/g,
-                    '<em>$1</em>'
-                  ),
-                }}
-              />
-              )
-            })}
-          </div>
+          {/* ── Main essay column ── */}
+          <div className="story-essay-column" style={{ maxWidth: '480px', flex: '1 1 480px' }}>
+            {/* Essay paragraphs — editorial serif with drop cap */}
+            <div style={{ marginBottom: '2.5rem' }}>
+              {paragraphs.map((para, i) => {
+                const isLast = i === paragraphs.length - 1
+                const isFirst = i === 0
+                const htmlContent = para.replace(/\*([^*]+)\*/g, '<em>$1</em>')
 
-          {/* Reframe (warm editorial italic — not interactive coral) */}
-          {person.reframe && (
-            <div
-              style={{
-                marginBottom: '2rem',
-                paddingTop: '1.5rem',
-                borderTop: `1px solid ${COLORS.borderSubtle}`,
-              }}
-            >
-              <p
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontStyle: 'italic',
-                  fontSize: 'clamp(0.95rem, 1.5vw, 1.1rem)',
-                  lineHeight: 1.7,
-                  color: COLORS.reframe,
-                }}
-              >
-                {person.reframe}
-              </p>
-            </div>
-          )}
-
-          {/* Connections */}
-          {connectedPeople.length > 0 && (
-            <div
-              style={{
-                marginBottom: '4rem',
-                paddingTop: '1.5rem',
-                borderTop: `1px solid ${COLORS.borderSubtle}`,
-              }}
-            >
-              <p
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '0.7rem',
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  color: COLORS.textMuted,
-                  marginBottom: '1.2rem',
-                }}
-              >
-                Connected
-              </p>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.6rem',
-                }}
-              >
-                {connectedPeople.map((connected) => (
-                  <button
-                    key={connected.id}
-                    onClick={() => handleNavigate(connected.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '1rem',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '0.6rem 0',
-                      textAlign: 'left',
-                      transition: 'opacity 0.3s ease',
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.opacity = '0.7')
-                    }
-                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-                  >
-                    {/* Small mugshot thumbnail — rectangular, archival */}
-                    <div
+                if (isFirst) {
+                  const firstChar = para.charAt(0)
+                  const restHtml = para.slice(1).replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                  return (
+                    <p
+                      key={`${person.id}-p-${i}`}
                       style={{
-                        width: '48px',
-                        height: '56px',
-                        borderRadius: '3px',
-                        overflow: 'hidden',
-                        flexShrink: 0,
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid rgba(255,255,255,0.08)',
+                        fontFamily: 'var(--font-display)',
+                        fontSize: '18px',
+                        fontWeight: 400,
+                        lineHeight: 1.8,
+                        color: COLORS.textBright,
+                        marginBottom: '1.4rem',
                       }}
                     >
-                      {connected.images?.color && (
-                        <img
-                          src={connected.images.color}
-                          alt={connected.displayName}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                            objectPosition: '25% center',
-                            filter: 'grayscale(0.3)',
-                          }}
-                        />
-                      )}
-                    </div>
-                    <div>
-                      <p
+                      <span
                         style={{
+                          float: 'left',
                           fontFamily: 'var(--font-display)',
-                          fontSize: '1rem',
+                          fontSize: '3.4rem',
+                          lineHeight: 0.8,
+                          marginRight: '0.08em',
+                          marginTop: '0.06em',
                           color: COLORS.textBright,
-                          marginBottom: '0.1rem',
                         }}
                       >
-                        {connected.displayName}
-                      </p>
-                      <p
-                        style={{
-                          fontFamily: 'var(--font-body)',
-                          fontSize: '0.75rem',
-                          color: COLORS.textMuted,
-                        }}
-                      >
-                        Arrested {connected.date} &mdash; {connected.charge}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+                        {firstChar}
+                      </span>
+                      <span dangerouslySetInnerHTML={{ __html: restHtml }} />
+                    </p>
+                  )
+                }
 
-          {/* Bottom spacer — room for focus gradient to fade out */}
-          <div style={{ paddingBottom: '40vh' }} />
+                return (
+                <p
+                  key={`${person.id}-p-${i}`}
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '18px',
+                    fontWeight: 400,
+                    lineHeight: 1.8,
+                    color: COLORS.text,
+                    marginBottom: '1.4rem',
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: htmlContent,
+                  }}
+                />
+                )
+              })}
+            </div>
+
+            {/* Reframe (warm editorial italic) */}
+            {person.reframe && (
+              <div
+                style={{
+                  marginBottom: '2rem',
+                  paddingTop: '1.5rem',
+                  borderTop: `1px solid ${COLORS.borderSubtle}`,
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontStyle: 'italic',
+                    fontSize: 'clamp(0.95rem, 1.5vw, 1.1rem)',
+                    lineHeight: 1.7,
+                    color: COLORS.reframe,
+                  }}
+                >
+                  {person.reframe}
+                </p>
+              </div>
+            )}
+
+            {/* Connections */}
+            {connectedPeople.length > 0 && (
+              <div
+                style={{
+                  marginBottom: '4rem',
+                  paddingTop: '1.5rem',
+                  borderTop: `1px solid ${COLORS.borderSubtle}`,
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '0.7rem',
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    color: COLORS.textMuted,
+                    marginBottom: '1.2rem',
+                  }}
+                >
+                  Connected
+                </p>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.6rem',
+                  }}
+                >
+                  {connectedPeople.map((connected) => (
+                    <button
+                      key={connected.id}
+                      onClick={() => handleNavigate(connected.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1rem',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '0.6rem 0',
+                        textAlign: 'left',
+                        transition: 'opacity 0.3s ease',
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.opacity = '0.7')
+                      }
+                      onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+                    >
+                      <div
+                        style={{
+                          width: '48px',
+                          height: '56px',
+                          borderRadius: '3px',
+                          overflow: 'hidden',
+                          flexShrink: 0,
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                        }}
+                      >
+                        {connected.images?.color && (
+                          <img
+                            src={connected.images.color}
+                            alt={connected.displayName}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                              objectPosition: '25% center',
+                              filter: 'grayscale(0.3)',
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <p
+                          style={{
+                            fontFamily: 'var(--font-display)',
+                            fontSize: '1rem',
+                            color: COLORS.textBright,
+                            marginBottom: '0.1rem',
+                          }}
+                        >
+                          {connected.displayName}
+                        </p>
+                        <p
+                          style={{
+                            fontFamily: 'var(--font-body)',
+                            fontSize: '0.75rem',
+                            color: COLORS.textMuted,
+                          }}
+                        >
+                          Arrested {connected.date} &mdash; {connected.charge}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bottom spacer */}
+            <div style={{ paddingBottom: '10vh' }} />
+          </div>
+
+          {/* ── Margin notes column — archival context beside the essay ── */}
+          {inscriptionLines && inscriptionLines.length > 0 && (
+            <aside
+              className="story-margin-notes"
+              style={{
+                flex: '0 0 200px',
+                paddingTop: '0.5rem',
+                position: 'sticky',
+                top: '2rem',
+                alignSelf: 'flex-start',
+                borderLeft: '1px solid rgba(232, 228, 214, 0.08)',
+                paddingLeft: '1.5rem',
+              }}
+            >
+              {inscriptionLines.map((line, i) => (
+                <p
+                  key={i}
+                  className="inscription-line inscription-line--dark"
+                  style={{
+                    animationDelay: `${1.0 + i * 1.2}s`,
+                    color: 'rgba(232, 228, 214, 0.68)',
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '12.5px',
+                    fontWeight: 300,
+                    lineHeight: 1.65,
+                    marginBottom: '1.2rem',
+                  }}
+                >
+                  {line}
+                </p>
+              ))}
+            </aside>
+          )}
         </div>
       </div>
     </div>

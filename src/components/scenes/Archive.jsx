@@ -210,13 +210,14 @@ export default function Archive() {
             >
               <p
                 style={{
-                  fontFamily: 'var(--font-body)',
-                  fontWeight: 300,
-                  fontStyle: 'normal',
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 400,
+                  fontStyle: 'italic',
                   fontSize: 'clamp(0.8rem, 1.1vw, 0.95rem)',
                   color: 'var(--color-text-muted)',
-                  lineHeight: 1.6,
+                  lineHeight: 1.7,
                   maxWidth: '320px',
+                  letterSpacing: '0.01em',
                 }}
               >
                 {group.label}
@@ -264,12 +265,13 @@ export default function Archive() {
         >
           <p
             style={{
-              fontFamily: 'var(--font-body)',
-              fontWeight: 300,
-              fontStyle: 'normal',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 400,
+              fontStyle: 'italic',
               fontSize: 'clamp(0.8rem, 1.1vw, 0.95rem)',
               color: 'var(--color-text-muted)',
-              lineHeight: 1.6,
+              lineHeight: 1.7,
+              letterSpacing: '0.01em',
             }}
           >
             Raids on house parties<br />
