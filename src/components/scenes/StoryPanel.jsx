@@ -163,8 +163,8 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
 
   // ─── Reset scroll on person change ────────────────────────────
   useEffect(() => {
-    const essayZone = essayZoneRef.current
-    if (essayZone) essayZone.scrollTop = 0
+    const scrollZone = videoZoneRef.current
+    if (scrollZone) scrollZone.scrollTop = 0
   }, [person.id])
 
   // ─── Magnifying Glass Presence Effect (desktop cursor) ─────────
