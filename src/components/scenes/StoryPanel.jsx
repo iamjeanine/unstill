@@ -773,7 +773,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                 position: 'sticky',
                 top: '2rem',
                 alignSelf: 'flex-start',
-                borderLeft: '1px solid rgba(232, 228, 214, 0.08)',
+                borderLeft: '1px solid rgba(232, 228, 214, 0.20)',
                 paddingLeft: '1.5rem',
               }}
             >
