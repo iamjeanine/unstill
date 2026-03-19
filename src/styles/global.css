@@ -248,12 +248,13 @@ button {
 }
 
 /* ── Card — glass plate on the table ──
-   Each card in the flex-column layout. GSAP handles layer promotion
-   during animation — no need for will-change (which creates permanent
-   compositor layers that can cause hit-test issues in some browsers). */
+   Each card in the flex-column layout. GSAP handles all transforms
+   (drift + hover lift) — no CSS transition on transform, which would
+   compete with GSAP and cause hit-test instability ("element is not
+   stable") during hover animations. */
 .horizon-card {
   position: relative;
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
 }
 
 .horizon-card:hover {
@@ -298,8 +299,8 @@ button {
   height: auto;
   display: block;
   transition:
-    transform 0.6s cubic-bezier(0.22, 0.1, 0.28, 1),
-    filter 0.6s cubic-bezier(0.22, 0.1, 0.28, 1);
+    transform 0.3s cubic-bezier(0.22, 0.1, 0.28, 1),
+    filter 0.3s cubic-bezier(0.22, 0.1, 0.28, 1);
 }
 
 .horizon-card:hover .horizon-frame img {

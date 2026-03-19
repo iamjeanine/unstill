@@ -141,11 +141,14 @@ export default function Horizon() {
               card.style.removeProperty('opacity')
               // Skip drift on small screens (no hover either)
               if (window.innerWidth <= 480) return
-              // Ambient drift — each card floats independently.
+              // Ambient drift — animate the inner frame rather than the
+              // card itself so the click target stays perfectly stable.
               // Different duration + delay per card so they never sync.
+              const frame = card.querySelector('.horizon-frame')
+              if (!frame) return
               const duration = 3.5 + (i % 5) * 0.7   // 3.5s–6.3s
               const delay = (i % 7) * 0.4              // phase offset
-              const drift = gsap.to(card, {
+              const drift = gsap.to(frame, {
                 y: -1,
                 duration,
                 delay,
@@ -179,20 +182,27 @@ export default function Horizon() {
     return face.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')
   }, [])
 
-  // ─── Hover lift — pauses drift, lifts card, resumes on leave ─
+  // ─── Hover lift — animate the inner frame, not the card itself ──
+  // The card div is the click target and must stay positionally stable.
+  // All visual movement (drift + hover lift) targets .horizon-frame
+  // inside the card so pointer events always land reliably.
   const handleCardEnter = useCallback((e) => {
-    const card = e.currentTarget
-    const drift = driftTweens.current.find((t) => t.targets().includes(card))
+    const frame = e.currentTarget.querySelector('.horizon-frame')
+    if (!frame) return
+    // Pause this card's drift tween while hovered
+    const drift = driftTweens.current.find((t) => t.targets().includes(frame))
     if (drift) drift.pause()
-    gsap.to(card, { y: -3, duration: 0.4, ease: 'power2.out' })
+    gsap.to(frame, { y: -3, duration: 0.25, ease: 'power2.out', overwrite: true })
   }, [])
   const handleCardLeave = useCallback((e) => {
-    const card = e.currentTarget
-    const drift = driftTweens.current.find((t) => t.targets().includes(card))
-    gsap.to(card, {
+    const frame = e.currentTarget.querySelector('.horizon-frame')
+    if (!frame) return
+    const drift = driftTweens.current.find((t) => t.targets().includes(frame))
+    gsap.to(frame, {
       y: 0,
-      duration: 0.5,
-      ease: 'power2.inOut',
+      duration: 0.35,
+      ease: 'power2.out',
+      overwrite: true,
       onComplete: () => { if (drift) drift.resume() },
     })
   }, [])
