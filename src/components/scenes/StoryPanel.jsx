@@ -475,6 +475,8 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                 <video
                   ref={videoRef}
                   src={person.animation}
+                  poster={person.images?.color}
+                  preload="auto"
                   className="story-media"
                   loop
                   muted
