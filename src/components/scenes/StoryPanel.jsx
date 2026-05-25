@@ -50,6 +50,8 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
   const essayZoneRef = useRef(null)
   const backRef = useRef(null)
   const loupeHintRef = useRef(null)
+  const metaBlockRef = useRef(null)
+  const marginNotesRef = useRef(null)
 
   // Magnifying glass presence — cursor tracking
   const presenceRef = useRef(null)
@@ -72,43 +74,58 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
     const video = videoRef.current
     const back = backRef.current
 
-    // Panel fades in
-    gsap.set(panel, { opacity: 0 })
-    gsap.to(panel, { opacity: 1, duration: 0.8, ease: 'power2.out' })
+    const meta = metaBlockRef.current
+    const essay = essayZoneRef.current
+    const marginNotes = marginNotesRef.current
 
-    // Back arrow
+    // Video is always visible — it rides with the panel opacity.
+    // No separate video fade = no dark flash.
+    if (video) {
+      video.play().catch(() => {})
+    }
+
+    // Panel fades in carrying the video with it — single smooth reveal
+    gsap.set(panel, { opacity: 0 })
+    gsap.to(panel, { opacity: 1, duration: 0.9, ease: 'power2.out' })
+
+    // Back arrow — appears shortly after panel
     if (back) {
       gsap.set(back, { opacity: 0, x: -8 })
       gsap.to(back, {
         opacity: 1,
         x: 0,
         duration: 0.6,
-        delay: 0.3,
-        ease: 'power3.out',
+        delay: 0.4,
+        ease: 'power2.out',
       })
     }
 
-    // Video fades in
-    if (video) {
-      gsap.set(video, { opacity: 0, scale: 0.97 })
-      gsap.to(video, {
-        opacity: 1,
-        scale: 1,
-        duration: 1.2,
-        delay: 0.15,
-        ease: 'power3.out',
-      })
-      video.play().catch(() => {})
+    // Meta block fades up after video is established
+    if (meta) {
+      gsap.set(meta, { opacity: 0 })
+      gsap.to(meta, { opacity: 1, duration: 0.8, delay: 0.6, ease: 'power2.out' })
     }
 
-    // Loupe hint — fades in after panel settles, breathes, dismissed on first hover
+    // Essay follows
+    if (essay) {
+      gsap.set(essay, { opacity: 0 })
+      gsap.to(essay, { opacity: 1, duration: 0.9, delay: 0.85, ease: 'power2.out' })
+    }
+
+    // Margin notes (inscriptions) arrive last
+    if (marginNotes) {
+      gsap.set(marginNotes, { opacity: 0 })
+      gsap.to(marginNotes, { opacity: 1, duration: 0.9, delay: 1.1, ease: 'power2.out' })
+    }
+
+    // Loupe hint — breathes after everything has settled
     const hint = loupeHintRef.current
     if (hint) {
       gsap.set(hint, { opacity: 0 })
       gsap.to(hint, {
         opacity: 1,
         duration: 1.2,
-        delay: 1.5,
+        delay: 2.0,
         ease: 'power2.out',
         onComplete: () => {
           gsap.to(hint, {
@@ -136,7 +153,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
     wrapper?.addEventListener('touchstart', dismissHint)
 
     return () => {
-      gsap.killTweensOf([panel, video, back, hint].filter(Boolean))
+      gsap.killTweensOf([panel, video, back, hint, meta, essay, marginNotes].filter(Boolean))
       wrapper?.removeEventListener('mouseenter', dismissHint)
       wrapper?.removeEventListener('touchstart', dismissHint)
       if (video) {
@@ -284,8 +301,8 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
 
     gsap.to(panel, {
       opacity: 0,
-      duration: 0.6,
-      ease: 'power2.in',
+      duration: 0.7,
+      ease: 'power2.inOut',
       onComplete: () => {
         isClosingRef.current = false
         if (onCloseComplete) onCloseComplete()
@@ -490,6 +507,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
 
         {/* Meta block — museum label beneath the artwork */}
         <div
+          ref={metaBlockRef}
           className="story-meta-block"
           style={{
             textAlign: 'center',
@@ -766,6 +784,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
           {/* ── Margin notes column — archival context beside the essay ── */}
           {inscriptionLines && inscriptionLines.length > 0 && (
             <aside
+              ref={marginNotesRef}
               className="story-margin-notes"
               style={{
                 flex: '0 0 200px',

@@ -521,21 +521,21 @@ class InteractionManager {
     // Track which planes are visible so exitStory only restores this group
     this._storyGroupPlanes = this.planes.filter((p) => p.mesh.visible)
 
-    // Dim other visible planes quickly
+    // Dim other visible planes — smooth dissolve
     this._storyGroupPlanes.forEach((p) => {
       if (p !== plane) {
-        p.dim(0.0, 0.35)
+        p.dim(0.0, 0.6)
       }
     })
 
-    // Fade out the clicked plane (StoryPanel will show its own video)
+    // Fade out the clicked plane
     tl.to(plane.material.uniforms.uOpacity, {
       value: 0,
-      duration: 0.3,
-      ease: 'power2.in',
-    }, 0.02)
+      duration: 0.5,
+      ease: 'power2.inOut',
+    }, 0.05)
 
-    // Mount StoryPanel early — overlaps with plane dissolve for seamless handoff
+    // Mount StoryPanel early so it crossfades with the dissolving planes
     tl.add(() => {
       this._setState(INTERACTION_STATES.STORY)
     }, 0.1)
@@ -572,19 +572,19 @@ class InteractionManager {
     plane.restoreZ()
 
     // Start restoring only the group's planes — they fade in underneath
-    // the dissolving StoryPanel (which takes 0.5s to exit)
+    // the dissolving StoryPanel (which takes 0.7s to exit)
     tl.add(() => {
       const groupPlanes = this._storyGroupPlanes || this.planes
       groupPlanes.forEach((p) => {
-        p.restore(0.7) // slightly longer fade for gentle emergence
+        p.restore(0.9) // gentle emergence under dissolving panel
       })
       this._storyGroupPlanes = null
-    }, 0)
+    }, 0.1)
 
-    // Return to browsing a little earlier
+    // Return to browsing after planes have begun materializing
     tl.add(() => {
       this._setState(INTERACTION_STATES.BROWSING)
-    }, 0.2)
+    }, 0.3)
   }
 
   /**
