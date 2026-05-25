@@ -521,24 +521,16 @@ class InteractionManager {
     // Track which planes are visible so exitStory only restores this group
     this._storyGroupPlanes = this.planes.filter((p) => p.mesh.visible)
 
-    // Dim other visible planes — smooth dissolve
-    this._storyGroupPlanes.forEach((p) => {
-      if (p !== plane) {
-        p.dim(0.0, 0.6)
-      }
-    })
-
-    // Fade out the clicked plane
-    tl.to(plane.material.uniforms.uOpacity, {
-      value: 0,
-      duration: 0.5,
-      ease: 'power2.inOut',
-    }, 0.05)
-
-    // Mount StoryPanel early so it crossfades with the dissolving planes
+    // Mount StoryPanel immediately — it handles the visual transition.
+    // The panel's dark background IS the dimming of the archive.
     tl.add(() => {
       this._setState(INTERACTION_STATES.STORY)
-    }, 0.1)
+    }, 0)
+
+    // Fade the planes out underneath the panel (cleanup, not the visual transition)
+    this._storyGroupPlanes.forEach((p) => {
+      p.dim(0.0, 0.6)
+    })
   }
 
   /**

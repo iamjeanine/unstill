@@ -78,44 +78,42 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
     const essay = essayZoneRef.current
     const marginNotes = marginNotesRef.current
 
-    // Video is always visible — it rides with the panel opacity.
-    // No separate video fade = no dark flash.
+    // ── The portrait begins to breathe ──
+    // Panel mounts at full opacity — its dark background IS the archive
+    // dimming. No separate panel fade. The video is visible from frame one.
+    // Text elements then develop like a photograph in chemistry.
+
     if (video) {
       video.play().catch(() => {})
     }
 
-    // Panel fades in carrying the video with it — single smooth reveal
-    gsap.set(panel, { opacity: 0 })
-    gsap.to(panel, { opacity: 1, duration: 0.9, ease: 'power2.out' })
-
-    // Back arrow — appears shortly after panel
+    // Back arrow develops quietly
     if (back) {
-      gsap.set(back, { opacity: 0, x: -8 })
+      gsap.set(back, { opacity: 0 })
       gsap.to(back, {
         opacity: 1,
-        x: 0,
-        duration: 0.6,
-        delay: 0.4,
+        duration: 0.8,
+        delay: 0.6,
         ease: 'power2.out',
       })
     }
 
-    // Meta block fades up after video is established
+    // Meta block — name and charge develop after the portrait is established
     if (meta) {
       gsap.set(meta, { opacity: 0 })
-      gsap.to(meta, { opacity: 1, duration: 0.8, delay: 0.6, ease: 'power2.out' })
+      gsap.to(meta, { opacity: 1, duration: 1.0, delay: 0.4, ease: 'power2.out' })
     }
 
-    // Essay follows
+    // Essay develops slowly — the viewer's eye is still on the portrait
     if (essay) {
       gsap.set(essay, { opacity: 0 })
-      gsap.to(essay, { opacity: 1, duration: 0.9, delay: 0.85, ease: 'power2.out' })
+      gsap.to(essay, { opacity: 1, duration: 1.2, delay: 0.8, ease: 'power2.out' })
     }
 
-    // Margin notes (inscriptions) arrive last
+    // Margin notes develop last — like chemistry reaching the edges
     if (marginNotes) {
       gsap.set(marginNotes, { opacity: 0 })
-      gsap.to(marginNotes, { opacity: 1, duration: 0.9, delay: 1.1, ease: 'power2.out' })
+      gsap.to(marginNotes, { opacity: 1, duration: 1.2, delay: 1.2, ease: 'power2.out' })
     }
 
     // Loupe hint — breathes after everything has settled
@@ -125,7 +123,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
       gsap.to(hint, {
         opacity: 1,
         duration: 1.2,
-        delay: 2.0,
+        delay: 2.2,
         ease: 'power2.out',
         onComplete: () => {
           gsap.to(hint, {
