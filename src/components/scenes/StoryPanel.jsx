@@ -80,8 +80,20 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
 
     // ── The portrait begins to breathe ──
     // Panel mounts at full opacity — its dark background IS the archive
-    // dimming. No separate panel fade. The video is visible from frame one.
+    // dimming. The video/image fades in smoothly from the dark ground,
+    // giving poster/media a moment to initialize and avoiding flash.
     // Text elements then develop like a photograph in chemistry.
+
+    const videoWrapper = videoWrapperRef.current
+    if (videoWrapper) {
+      gsap.set(videoWrapper, { opacity: 0 })
+      gsap.to(videoWrapper, {
+        opacity: 1,
+        duration: 0.5,
+        delay: 0.05,
+        ease: 'power2.out',
+      })
+    }
 
     if (video) {
       video.play().catch(() => {})
@@ -151,7 +163,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
     wrapper?.addEventListener('touchstart', dismissHint)
 
     return () => {
-      gsap.killTweensOf([panel, video, back, hint, meta, essay, marginNotes].filter(Boolean))
+      gsap.killTweensOf([panel, video, videoWrapper, back, hint, meta, essay, marginNotes].filter(Boolean))
       wrapper?.removeEventListener('mouseenter', dismissHint)
       wrapper?.removeEventListener('touchstart', dismissHint)
       if (video) {
@@ -484,6 +496,9 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                   style={{
                     height: 'auto',
                     display: 'block',
+                    aspectRatio: person.dimensions ? `${person.dimensions.width} / ${person.dimensions.height}` : undefined,
+                    objectFit: 'contain',
+                    backgroundColor: COLORS.bg,
                   }}
                 />
               </StoryLoupe>
@@ -497,6 +512,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                     height: 'auto',
                     display: 'block',
                     boxShadow: COLORS.videoGlow,
+                    aspectRatio: person.dimensions ? `${person.dimensions.width} / ${person.dimensions.height}` : undefined,
                   }}
                 />
               )
