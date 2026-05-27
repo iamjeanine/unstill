@@ -89,13 +89,14 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
       gsap.set(videoWrapper, { opacity: 0 })
       gsap.to(videoWrapper, {
         opacity: 1,
-        duration: 0.5,
+        duration: 0.7,
         delay: 0.05,
         ease: 'power2.out',
       })
     }
 
     if (video) {
+      video.currentTime = 0
       video.play().catch(() => {})
     }
 
