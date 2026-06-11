@@ -38,8 +38,10 @@ const ALLOWED_ORIGINS = [
 // as a null result and falls back to the static pre-generated
 // inscriptions in storyInscriptions.json, so visitors see no error.
 
-const DAILY_GLOBAL_LIMIT = 150
-const DAILY_IP_LIMIT = 20
+// Limits are anti-bot ceilings, not engagement caps — a real visitor
+// reading every portrait uses ~10 calls/day.
+const DAILY_GLOBAL_LIMIT = 500
+const DAILY_IP_LIMIT = 100
 const COUNTER_TTL_SECONDS = 90000 // 25h — outlives the UTC day it counts
 
 // Env vars auto-populated when an Upstash Redis store is connected to
