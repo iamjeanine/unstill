@@ -925,11 +925,11 @@ button {
     align-items: center;
   }
   .inscriptions-container .inscription-line {
-    font-size: 12px;
+    font-size: 13px;
     margin-bottom: 10px;
   }
   .inscriptions-container .inscription-line.first-line {
-    font-size: 13px;
+    font-size: 14px;
     margin-bottom: 12px;
   }
 }

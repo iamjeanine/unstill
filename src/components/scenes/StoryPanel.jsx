@@ -27,9 +27,9 @@ import storyInscriptions from '../../data/storyInscriptions.json'
 // ─── Color palette (Lightbox dark theme) ─────────────────────────────
 const COLORS = {
   bg: '#0c0a09',
-  text: 'rgba(232, 228, 214, 0.85)',
-  textMuted: 'rgba(232, 228, 214, 0.65)',
-  textBright: 'rgba(232, 228, 214, 0.9)',
+  text: 'rgba(232, 228, 214, 0.92)',
+  textMuted: 'rgba(232, 228, 214, 0.72)',
+  textBright: 'rgba(232, 228, 214, 0.95)',
   accent: '#E8705A',
   reframe: 'rgba(214, 168, 152, 0.9)',
   backBtn: 'rgba(255, 255, 255, 0.55)',
@@ -552,7 +552,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
           <p
             style={{
               fontFamily: 'var(--font-body)',
-              fontSize: '13px',
+              fontSize: '14px',
               fontWeight: 300,
               color: COLORS.text,
               letterSpacing: '0.02em',
@@ -615,7 +615,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
           }}
         >
           {/* ── Main essay column ── */}
-          <div className="story-essay-column" style={{ maxWidth: '480px', flex: '1 1 480px' }}>
+          <div className="story-essay-column" style={{ maxWidth: '520px', flex: '1 1 520px' }}>
             {/* Essay paragraphs — editorial serif with drop cap */}
             <div style={{ marginBottom: '2.5rem' }}>
               {paragraphs.map((para, i) => {
@@ -631,9 +631,9 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                       key={`${person.id}-p-${i}`}
                       style={{
                         fontFamily: 'var(--font-display)',
-                        fontSize: '18px',
+                        fontSize: '21px',
                         fontWeight: 400,
-                        lineHeight: 1.8,
+                        lineHeight: 1.7,
                         color: COLORS.textBright,
                         marginBottom: '1.4rem',
                       }}
@@ -661,9 +661,9 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                   key={`${person.id}-p-${i}`}
                   style={{
                     fontFamily: 'var(--font-display)',
-                    fontSize: '18px',
+                    fontSize: '21px',
                     fontWeight: 400,
-                    lineHeight: 1.8,
+                    lineHeight: 1.7,
                     color: COLORS.text,
                     marginBottom: '1.4rem',
                   }}
@@ -823,10 +823,10 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                   className="inscription-line inscription-line--dark"
                   style={{
                     animationDelay: `${1.0 + i * 1.2}s`,
-                    color: 'rgba(232, 228, 214, 0.68)',
+                    color: 'rgba(232, 228, 214, 0.82)',
                     fontFamily: 'var(--font-body)',
-                    fontSize: '12.5px',
-                    fontWeight: 300,
+                    fontSize: '14px',
+                    fontWeight: 400,
                     lineHeight: 1.65,
                     marginBottom: '1.2rem',
                   }}
