@@ -222,7 +222,7 @@ REMINDER: Output ONLY the three inscription sentences, nothing else. No reasonin
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           max_tokens: 200,
           system: systemPrompt,
           messages: [{ role: 'user', content: userMessage }],
