@@ -608,6 +608,10 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
             display: 'flex',
             justifyContent: 'center',
             gap: '3rem',
+            /* width must be definite: the parent flex column centers children,
+               so without it this box is sized by its content and re-widens
+               (shifting the essay) when inscriptions arrive. */
+            width: '100%',
             maxWidth: '820px',
             margin: '0 auto',
             padding: '2.5rem 2rem 0',
@@ -802,22 +806,26 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
             <div style={{ paddingBottom: '10vh' }} />
           </div>
 
-          {/* ── Margin notes column — archival context beside the essay ── */}
-          {inscriptionLines && inscriptionLines.length > 0 && (
-            <aside
-              ref={marginNotesRef}
-              className="story-margin-notes"
-              style={{
-                flex: '0 0 200px',
-                paddingTop: '0.5rem',
-                position: 'sticky',
-                top: '2rem',
-                alignSelf: 'flex-start',
-                borderLeft: '1px solid rgba(232, 228, 214, 0.20)',
-                paddingLeft: '1.5rem',
-              }}
-            >
-              {inscriptionLines.map((line, i) => (
+          {/* ── Margin notes column — archival context beside the essay ──
+              Always mounted so the 200px column is reserved from first paint.
+              Inscriptions can arrive seconds late (live generation); if the
+              column mounted with them, the essay would shove left ~120px. */}
+          <aside
+            ref={marginNotesRef}
+            className="story-margin-notes"
+            style={{
+              flex: '0 0 200px',
+              paddingTop: '0.5rem',
+              position: 'sticky',
+              top: '2rem',
+              alignSelf: 'flex-start',
+              borderLeft: '1px solid rgba(232, 228, 214, 0.20)',
+              paddingLeft: '1.5rem',
+            }}
+          >
+            {inscriptionLines &&
+              inscriptionLines.length > 0 &&
+              inscriptionLines.map((line, i) => (
                 <p
                   key={i}
                   className="inscription-line inscription-line--dark"
@@ -834,8 +842,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                   {line}
                 </p>
               ))}
-            </aside>
-          )}
+          </aside>
         </div>
       </div>
     </div>
