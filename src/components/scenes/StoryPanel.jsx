@@ -488,7 +488,11 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                 <video
                   ref={videoRef}
                   src={person.animation}
-                  poster={person.images?.color}
+                  /* Poster is the video's extracted first frame (16:9 close-up),
+                     NOT the wide archive still — and the box ratio must match the
+                     video (2560x1440), or playback letterboxes and the portrait
+                     visibly shifts when the video takes over from the poster. */
+                  poster={`/posters/${person.id}.jpg`}
                   preload="auto"
                   className="story-media"
                   loop
@@ -497,7 +501,7 @@ export default function StoryPanel({ person, onClose, onCloseStart, onCloseCompl
                   style={{
                     height: 'auto',
                     display: 'block',
-                    aspectRatio: person.dimensions ? `${person.dimensions.width} / ${person.dimensions.height}` : undefined,
+                    aspectRatio: '16 / 9',
                     objectFit: 'contain',
                     backgroundColor: COLORS.bg,
                   }}
