@@ -15,31 +15,129 @@ const historicalContext = readFileSync(join(root, 'historical-context.md'), 'utf
 // Instead, inline a small lookup that mirrors src/data/primarySources.js.
 import { primarySources } from '../src/data/primarySources.js'
 
-// ─── Rate limiting (in-memory, resets per-instance + midnight UTC) ───
+// ─── CORS allowlist ──────────────────────────────────────────────────
+//
+// NOTE: This lock is tied to the production domain unstill.vercel.app.
+// If the site ever moves to a custom domain, add that domain here or
+// browser calls to this endpoint will be blocked.
 
-let callCount = 0
-let resetDate = todayUTC()
+const ALLOWED_ORIGINS = [
+  'https://unstill.vercel.app',
+  'http://localhost:3000', // local dev
+]
+
+// ─── Rate limiting ───────────────────────────────────────────────────
+//
+// Hard daily ceiling + per-IP limit, backed by Upstash Redis (via the
+// Vercel Marketplace integration) so the caps hold across serverless
+// instances and cold starts. If the Redis env vars are not configured
+// or Redis is unreachable, degrades to the per-instance in-memory
+// guard below — never fails open without any limit, never errors out.
+//
+// When a cap is hit the endpoint returns 429; the client treats that
+// as a null result and falls back to the static pre-generated
+// inscriptions in storyInscriptions.json, so visitors see no error.
+
+const DAILY_GLOBAL_LIMIT = 150
+const DAILY_IP_LIMIT = 20
+const COUNTER_TTL_SECONDS = 90000 // 25h — outlives the UTC day it counts
+
+// Env vars auto-populated when an Upstash Redis store is connected to
+// the Vercel project (Marketplace uses either naming convention).
+const REDIS_URL =
+  process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL
+const REDIS_TOKEN =
+  process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN
 
 function todayUTC() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function checkRateLimit() {
+// In-memory fallback (per-instance, resets on cold start)
+let memGlobalCount = 0
+let memIpCounts = new Map()
+let memResetDate = todayUTC()
+
+function memCheck(ip) {
   const today = todayUTC()
-  if (today !== resetDate) {
-    callCount = 0
-    resetDate = today
+  if (today !== memResetDate) {
+    memGlobalCount = 0
+    memIpCounts = new Map()
+    memResetDate = today
   }
-  if (callCount >= 100) return false
-  callCount++
+  if (memGlobalCount >= DAILY_GLOBAL_LIMIT) return false
+  const ipCount = memIpCounts.get(ip) || 0
+  if (ipCount >= DAILY_IP_LIMIT) return false
+  memGlobalCount++
+  memIpCounts.set(ip, ipCount + 1)
   return true
+}
+
+// Durable counters via Upstash REST pipeline: INCR both counters and
+// set a TTL on first increment so keys expire after their day passes.
+async function redisCheck(ip) {
+  const day = todayUTC()
+  const globalKey = `marginalia:global:${day}`
+  const ipKey = `marginalia:ip:${ip}:${day}`
+
+  const response = await fetch(`${REDIS_URL}/pipeline`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${REDIS_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify([
+      ['INCR', globalKey],
+      ['EXPIRE', globalKey, String(COUNTER_TTL_SECONDS), 'NX'],
+      ['INCR', ipKey],
+      ['EXPIRE', ipKey, String(COUNTER_TTL_SECONDS), 'NX'],
+    ]),
+  })
+
+  if (!response.ok) throw new Error(`Redis ${response.status}`)
+
+  const results = await response.json()
+  const globalCount = Number(results?.[0]?.result)
+  const ipCount = Number(results?.[2]?.result)
+  if (!Number.isFinite(globalCount) || !Number.isFinite(ipCount)) {
+    throw new Error('Unexpected Redis pipeline response')
+  }
+
+  return globalCount <= DAILY_GLOBAL_LIMIT && ipCount <= DAILY_IP_LIMIT
+}
+
+async function checkRateLimit(ip) {
+  if (REDIS_URL && REDIS_TOKEN) {
+    try {
+      return await redisCheck(ip)
+    } catch (err) {
+      console.error(
+        '[marginalia] Redis unavailable, using in-memory limit:',
+        err.message
+      )
+    }
+  }
+  return memCheck(ip)
+}
+
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for']
+  if (typeof forwarded === 'string' && forwarded.length > 0) {
+    return forwarded.split(',')[0].trim()
+  }
+  return req.headers['x-real-ip'] || req.socket?.remoteAddress || 'unknown'
 }
 
 // ─── Handler ────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
-  // CORS for local dev
-  res.setHeader('Access-Control-Allow-Origin', '*')
+  // CORS — locked to the site's own origin (see ALLOWED_ORIGINS note)
+  const origin = req.headers.origin
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin)
+    ? origin
+    : ALLOWED_ORIGINS[0]
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin)
+  res.setHeader('Vary', 'Origin')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
@@ -51,9 +149,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Rate limit
-  if (!checkRateLimit()) {
-    return res.status(429).json({ error: 'Daily limit reached (100 calls/day)' })
+  // Reject browser cross-origin calls outright — CORS headers alone only
+  // stop the response from being read; this stops the API spend too.
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    return res.status(403).json({ error: 'Origin not allowed' })
+  }
+
+  // Rate limit — per-IP and global daily caps
+  const clientIp = getClientIp(req)
+  if (!(await checkRateLimit(clientIp))) {
+    return res.status(429).json({ error: 'Daily limit reached' })
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY
