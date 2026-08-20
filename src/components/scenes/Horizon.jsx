@@ -26,23 +26,23 @@ gsap.registerPlugin(ScrollTrigger)
 
 const horizonFaces = [
   // Curated order for column flow — alternating formats creates rhythm
-  { file: 'Sidney Kelly.png',  name: 'Sidney Kelly',     catalog: '1266',     date: '26.6.24',  location: 'Sydney' },
-  { file: 'D Ligores.png',    name: 'D. Ligores',       catalog: 'S.P.',     date: 'c. 1925',  location: 'Sydney' },
-  { file: 'Edna Edgar.png',   name: 'Edna Edgar',       catalog: '158A',     date: '28.12.26', location: 'Sydney' },
-  { file: 'V Lowe.png',       name: 'V. Lowe',          catalog: '764',      date: '15.2.22',  location: 'Sydney' },
-  { file: 'D. Poole.png',     name: 'D. Poole',         catalog: '639 L.B.', date: '31.7.24',  location: 'Sydney' },
-  { file: 'F. Schmidt.png',   name: 'F. Schmidt',       catalog: '410',      date: '18.6.23',  location: 'Sydney' },
-  { file: 'AH Chong.png',     name: 'Ah Chong',         catalog: 'D62',      date: '11.7.28',  location: 'Sydney' },
-  { file: 'S.J. Hay.png',     name: 'S. J. Hay',        catalog: '167',      date: 'c. 1922',  location: 'Sydney' },
-  { file: 'May Russel.png',   name: 'May Russel',       catalog: '936',      date: '31.1.22',  location: 'Sydney' },
-  { file: 'E. Falleni.png',   name: 'E. Falleni',       catalog: '756',      date: 'c. 1920',  location: 'Sydney' },
-  { file: 'G Lowe.png',       name: 'G. Lowe',          catalog: 'D10',      date: '28.9.28',  location: 'Sydney' },
+  { file: 'Sidney Kelly.jpg',  name: 'Sidney Kelly',     catalog: '1266',     date: '26.6.24',  location: 'Sydney' },
+  { file: 'D Ligores.jpg',    name: 'D. Ligores',       catalog: 'S.P.',     date: 'c. 1925',  location: 'Sydney' },
+  { file: 'Edna Edgar.jpg',   name: 'Edna Edgar',       catalog: '158A',     date: '28.12.26', location: 'Sydney' },
+  { file: 'V Lowe.jpg',       name: 'V. Lowe',          catalog: '764',      date: '15.2.22',  location: 'Sydney' },
+  { file: 'D. Poole.jpg',     name: 'D. Poole',         catalog: '639 L.B.', date: '31.7.24',  location: 'Sydney' },
+  { file: 'F. Schmidt.jpg',   name: 'F. Schmidt',       catalog: '410',      date: '18.6.23',  location: 'Sydney' },
+  { file: 'AH Chong.jpg',     name: 'Ah Chong',         catalog: 'D62',      date: '11.7.28',  location: 'Sydney' },
+  { file: 'S.J. Hay.jpg',     name: 'S. J. Hay',        catalog: '167',      date: 'c. 1922',  location: 'Sydney' },
+  { file: 'May Russel.jpg',   name: 'May Russel',       catalog: '936',      date: '31.1.22',  location: 'Sydney' },
+  { file: 'E. Falleni.jpg',   name: 'E. Falleni',       catalog: '756',      date: 'c. 1920',  location: 'Sydney' },
+  { file: 'G Lowe.jpg',       name: 'G. Lowe',          catalog: 'D10',      date: '28.9.28',  location: 'Sydney' },
   { file: 'Neville McQuade and Lewis Stanley.jpg', name: 'N. McQuade & L. Stanley', catalog: 'S.P.', date: 'c. 1930', location: 'Sydney' },
-  { file: 'Patrick Riley.png', name: 'Patrick Riley',    catalog: '1098',     date: '17.8.26',  location: 'Sydney' },
-  { file: 'V Stander.png',    name: 'V. Stander',       catalog: 'S.P.',     date: 'c. 1925',  location: 'Sydney' },
+  { file: 'Patrick Riley.jpg', name: 'Patrick Riley',    catalog: '1098',     date: '17.8.26',  location: 'Sydney' },
+  { file: 'V Stander.jpg',    name: 'V. Stander',       catalog: 'S.P.',     date: 'c. 1925',  location: 'Sydney' },
   { file: 'P. Hume.jpg',      name: 'P. Hume',          catalog: 'S15 L.B.', date: '1.6.21',   location: 'Sydney' },
   { file: 'E. Park.jpg',      name: 'E. Park',          catalog: 'K. Don',   date: '20.29',    location: 'Sydney' },
-  { file: 'William Stanley Moore.png', name: 'William Stanley Moore', catalog: '1299', date: '1.8.25', location: 'Sydney' },
+  { file: 'William Stanley Moore.jpg', name: 'William Stanley Moore', catalog: '1299', date: '1.8.25', location: 'Sydney' },
 ]
 
 // Session-seeded shuffle — different each page load, stable within session
