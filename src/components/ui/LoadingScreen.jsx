@@ -58,6 +58,7 @@ const BREATHE_SPEED = 0.4    // pulse frequency
 export default function LoadingScreen({ isLoaded, onEnter }) {
   const screenRef = useRef(null)
   const canvasRef = useRef(null)
+  const wordmarkRef = useRef(null)
   const textRef = useRef(null)
   const dismissed = useRef(false)
   const loadedRef = useRef(false)
@@ -256,7 +257,18 @@ export default function LoadingScreen({ isLoaded, onEnter }) {
   useEffect(() => {
     const text = textRef.current
     const hint = hintRef.current
+    const wordmark = wordmarkRef.current
     if (!text) return
+    if (wordmark) {
+      gsap.set(wordmark, { opacity: 0, y: 12 })
+      gsap.to(wordmark, {
+        opacity: 1,
+        y: 0,
+        duration: 2.5,
+        delay: 0.3,
+        ease: 'power2.out',
+      })
+    }
     gsap.set(text, { opacity: 0, y: 12 })
     gsap.to(text, {
       opacity: 1,
@@ -296,6 +308,8 @@ export default function LoadingScreen({ isLoaded, onEnter }) {
     const screen = screenRef.current
     const text = textRef.current
     const canvas = canvasRef.current
+    const wordmark = wordmarkRef.current
+    if (wordmark) gsap.killTweensOf(wordmark)
     const tl = gsap.timeline()
 
     // Kill all running animations on text and hint
@@ -309,7 +323,7 @@ export default function LoadingScreen({ isLoaded, onEnter }) {
     }
 
     // Text and loupe vanish quickly
-    tl.to([text, canvas].filter(Boolean), {
+    tl.to([wordmark, text, canvas].filter(Boolean), {
       opacity: 0,
       duration: 0.3,
       ease: 'power2.in',
@@ -361,6 +375,23 @@ export default function LoadingScreen({ isLoaded, onEnter }) {
         position: 'relative',
         zIndex: 1,
       }}>
+        {/* Wordmark — same display face and tracking as the Entry title,
+            so the page names itself before the gate is crossed. */}
+        <div
+          ref={wordmarkRef}
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(2.2rem, 6vw, 3.4rem)',
+            fontWeight: 400,
+            letterSpacing: '0.08em',
+            color: 'rgba(232, 228, 214, 0.92)',
+            lineHeight: 1,
+            opacity: 0,
+            userSelect: 'none',
+          }}
+        >
+          UNSTILL
+        </div>
         <p
           ref={textRef}
           style={{
@@ -391,7 +422,7 @@ export default function LoadingScreen({ isLoaded, onEnter }) {
             fontSize: '0.65rem',
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
-            color: 'rgba(232, 228, 214, 0.45)',
+            color: 'rgba(232, 228, 214, 0.62)',
             opacity: 0,
             userSelect: 'none',
           }}
