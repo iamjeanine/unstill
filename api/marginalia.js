@@ -151,9 +151,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Reject browser cross-origin calls outright — CORS headers alone only
-  // stop the response from being read; this stops the API spend too.
-  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+  // Require a known Origin. CORS headers alone only stop a browser from
+  // reading the response; this stops the API spend too. The real client is
+  // a same-origin browser POST, which always sends an allowed Origin, so
+  // rejecting a missing Origin also turns away non-browser callers (curl,
+  // scripts) that would otherwise slip past a cross-origin-only check.
+  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
     return res.status(403).json({ error: 'Origin not allowed' })
   }
 
