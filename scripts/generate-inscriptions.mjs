@@ -13,7 +13,7 @@ const root = join(__dirname, '..')
 
 const API_KEY = readFileSync(join(root, '.env.local'), 'utf-8')
   .split('\n')
-  .find(l => l.startsWith('VITE_ANTHROPIC_API_KEY='))
+  .find(l => l.startsWith('ANTHROPIC_API_KEY='))
   ?.split('=')
   .slice(1)
   .join('=')
